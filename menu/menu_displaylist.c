@@ -2153,7 +2153,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    }
    else if (!string_is_empty(info->path))
    {
-      char lpl_basename[PATH_MAX_LENGTH];
+      char lpl_basename[256];
       lpl_basename[0] = '\0';
 
       fill_pathname_base_noext(lpl_basename, info->path, sizeof(lpl_basename));
@@ -3282,8 +3282,8 @@ static int menu_displaylist_parse_horizontal_list(
 
    if (!string_is_empty(item->path))
    {
+      char lpl_basename[256];
       char path_playlist[PATH_MAX_LENGTH];
-      char lpl_basename[PATH_MAX_LENGTH];
       const char *dir_playlist  = settings->paths.directory_playlist;
 
       lpl_basename[0]           = '\0';
@@ -8269,7 +8269,9 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
          {
             bool kiosk_mode_enable                                  = settings->bools.kiosk_mode_enable;
+#if defined(HAVE_QT) || defined(HAVE_COCOA)
             bool desktop_menu_enable                                = settings->bools.desktop_menu_enable;
+#endif
             bool menu_screensaver_supported                         = menu_driver_screensaver_supported();
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
             enum menu_screensaver_effect menu_screensaver_animation =
