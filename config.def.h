@@ -339,7 +339,7 @@
 #define DEFAULT_MAX_SWAPCHAIN_IMAGES 3
 
 /* D3D1x specific */
-#define DEFAULT_MAX_FRAME_LATENCY 1
+#define DEFAULT_MAX_FRAME_LATENCY 0
 
 /* GL specific */
 #define DEFAULT_ADAPTIVE_VSYNC false
