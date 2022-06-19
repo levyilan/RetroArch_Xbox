@@ -1073,7 +1073,7 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
       if (max_latency == 1)
       {
           d3d11->wait_for_vblank = true;
-          max_latency = 3;
+          max_latency = 4;
       }
       else
           d3d11->wait_for_vblank = false;
