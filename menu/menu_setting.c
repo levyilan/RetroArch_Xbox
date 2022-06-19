@@ -12552,7 +12552,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
-            
+
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.video_max_frame_latency,
