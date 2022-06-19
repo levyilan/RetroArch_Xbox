@@ -336,7 +336,7 @@
 #define DEFAULT_VSYNC true
 
 /* Vulkan specific */
-#define DEFAULT_MAX_SWAPCHAIN_IMAGES 3
+#define DEFAULT_MAX_SWAPCHAIN_IMAGES 4
 
 /* D3D1x specific */
 #define DEFAULT_MAX_FRAME_LATENCY 0
