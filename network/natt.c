@@ -30,6 +30,12 @@
 
 #include "natt.h"
 
+#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY) && !defined(_3DS)
+#ifndef HAVE_INET6
+#define HAVE_INET6 1
+#endif
+#endif
+
 static bool translate_addr(struct sockaddr_in *addr,
    char *host, size_t hostlen, char *port, size_t portlen)
 {
@@ -67,7 +73,7 @@ static bool translate_addr(struct sockaddr_in *addr,
 
 static bool addr_6to4(struct sockaddr_storage *addr)
 {
-#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
+#if defined(HAVE_INET6)
    /* ::ffff:a.b.c.d */
    static const uint16_t preffix[] = {0,0,0,0,0,0xffff};
    uint32_t address;

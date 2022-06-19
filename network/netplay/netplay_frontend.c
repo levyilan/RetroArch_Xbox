@@ -79,7 +79,9 @@
 #include "netplay_private.h"
 
 #if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY) && !defined(_3DS)
+#ifndef HAVE_INET6
 #define HAVE_INET6 1
+#endif
 #endif
 
 #ifdef TCP_NODELAY
@@ -4858,9 +4860,9 @@ static void relay_chat(netplay_t *netplay, const char *nick, const char *msg)
 static void show_chat(netplay_t *netplay, const char *nick, const char *msg)
 {
    char formatted_chat[NETPLAY_CHAT_MAX_SIZE];
-
-   /* Truncate the message if necessary. */
-   snprintf(formatted_chat, sizeof(formatted_chat), "%s: %s", nick, msg);
+   /* Truncate the message if necessary. Truncation here is intentional. */
+   int ret = snprintf(formatted_chat, sizeof(formatted_chat), "%s: %s", nick, msg);
+   (void)ret;
 
    RARCH_LOG("[Netplay] %s\n", formatted_chat);
 
