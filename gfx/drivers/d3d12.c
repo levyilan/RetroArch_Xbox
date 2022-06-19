@@ -1278,13 +1278,13 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
       UINT max_latency     = settings->uints.video_max_frame_latency;
       UINT cur_latency     = 0;
 
-      if (max_latency == 1)
+      if (max_latency == 0)
       {
-          d3d12->chain.wait_for_vblank = true;
-          max_latency = 3;
+         d3d12->chain.wait_for_vblank = true;
+         max_latency                  = 1;
       }
       else
-          d3d12->chain.wait_for_vblank = false;
+         d3d12->chain.wait_for_vblank = false;
 
       DXGISetMaximumFrameLatency(d3d12->chain.handle, max_latency);
       DXGIGetMaximumFrameLatency(d3d12->chain.handle, &cur_latency);
@@ -2669,8 +2669,7 @@ static bool d3d12_gfx_frame(
 #endif
    DXGIPresent(d3d12->chain.handle, sync_interval, present_flags);
 
-   // Causes a severe impact on performance
-   if (vsync)
+   if (vsync && wait_for_vblank)
    {
       IDXGIOutput *pOutput;
       DXGIGetContainingOutput(d3d12->chain.handle, &pOutput);
