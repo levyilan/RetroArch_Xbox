@@ -1070,13 +1070,13 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
       UINT max_latency     = settings->uints.video_max_frame_latency;
       UINT cur_latency     = 0;
 
-      if (max_latency == 0)
+      if (max_latency == 1)
       {
-         d3d11->wait_for_vblank = true;
-         max_latency            = 1;
+          d3d11->wait_for_vblank = true;
+          max_latency = 3;
       }
       else
-         d3d11->wait_for_vblank = false;
+          d3d11->wait_for_vblank = false;
 
       DXGISetMaximumFrameLatency(d3d11->swapChain, max_latency);
       DXGIGetMaximumFrameLatency(d3d11->swapChain, &cur_latency);
@@ -2384,6 +2384,7 @@ static bool d3d11_gfx_frame(
 
    DXGIPresent(d3d11->swapChain, d3d11->swap_interval, present_flags);
 
+   // Causes a severe impact on performance
    if (vsync && wait_for_vblank)
    {
       IDXGIOutput *pOutput;
