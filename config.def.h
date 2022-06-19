@@ -861,7 +861,7 @@ static const bool default_screenshots_in_content_dir = false;
 #elif TARGET_OS_TV
 #define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_COMBO_DOWN_Y_L_R
 #else
-#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_COMBO_NONE
+#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_COMBO_START_SELECT
 #endif
 
 #define DEFAULT_QUIT_GAMEPAD_COMBO INPUT_COMBO_NONE
@@ -1467,7 +1467,7 @@ static const bool input_descriptor_hide_unbound = false;
 #if defined(DINGUX)
 static const unsigned input_max_users = 1;
 #else
-static const unsigned input_max_users = 5;
+static const unsigned input_max_users = 2;
 #endif
 
 static const unsigned input_poll_type_behavior = 2;
