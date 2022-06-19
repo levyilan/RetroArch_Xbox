@@ -2666,9 +2666,9 @@ static bool d3d12_gfx_frame(
       IDXGIOutput *pOutput;
       DXGIGetContainingOutput(d3d12->chain.handle, &pOutput);
       DXGIWaitForVBlank(pOutput);
-   }
+   }*/
 
-   return true;*/
+   return true;
 }
 
 static void d3d12_gfx_set_nonblock_state(void* data, bool toggle,
