@@ -1981,6 +1981,10 @@ MSG_HASH(
    "Automàtic"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
+   "real(s)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
    "Sincronització dura de GPU"
    )
@@ -2964,6 +2968,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "Servei d'IA"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
+   "Captura una imatge del contingut actual i tradueix o llegeix en veu alta els textos que hi hagin.\nCal haver activat i configurat el servei d'IA."
+   )
 
 /* Settings > Input > Port # Controls */
 
@@ -2976,8 +2984,20 @@ MSG_HASH(
    "Tipus d’analògic a digital"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "Usa la palanca analògica especificada com a senyal d'entrada per a la creueta. Si el nucli té suport natiu de control analògic, les assignacions de la creueta es desactivarán llevat que s'hagi seleccionat una opció forçada. Forçant les assignacions de creueta, el nucli no rebrá cap entrada analògica de la palanca especificada."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
    "Índex del dispositiu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
+   "Port assignat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
+   "Especifica quin dels ports del nucli (usualment, el número del jugador) rebrà les senyals d'entrada del port de comandament %u del front-end."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -3818,6 +3838,10 @@ MSG_HASH(
    "Mostra l’opció “Inicia l’enregistrament”."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
+   "Mostra l’opció de «Shaders»."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "Mostra “Afegeix als preferits”"
    )
@@ -3826,19 +3850,119 @@ MSG_HASH(
    "Mostra l’opció “Afegeix als preferits”."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+   "Mostra «Estableix l’associació de nucli»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+   "Mostra l’opció «Estableix l’associació de nucli» quan no s’executa el contingut."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+   "Mostra «Restableix l’associació de nucli»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+   "Mostra l’opció «Restableix l’associació de nucli» quan no s’executa el contingut."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+   "Mostra «Baixa les miniatures»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+   "Mostra l’opció «Baixa les miniatures» quan no s’executa el contingut."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
    "Mostra «Informació»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
+   "Mostra l’opció «Informació»."
    )
 
 /* Settings > User Interface > Views > Settings */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
+   "Mostra «Controladors»"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,
    "Mostra les opcions de controladors."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,
+   "Mostra «Vídeo»"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_VIDEO,
    "Mostra les opcions de vídeo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AUDIO,
+   "Mostra «Àudio»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AUDIO,
+   "Mostra les opcions d’«Àudio»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_INPUT,
+   "Mostra «Entrada»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_INPUT,
+   "Mostra les opcions d’«Entrada»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LATENCY,
+   "Mostra «Latència»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
+   "Mostra les opcions de «Latència»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,
+   "Mostra «Nucli»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CORE,
+   "Mostra les opcions del «Nucli»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,
+   "Mostra «Configuració»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CONFIGURATION,
+   "Mostra les opcions de «Configuració»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
+   "Mostra «Desament»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
+   "Mostra les opcions de «Desament»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LOGGING,
+   "Mostra «Registre»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
+   "Mostra les opcions de «Registre»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FILE_BROWSER,
+   "Mostra «Navegador de fitxers»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FILE_BROWSER,
+   "Mostra les opcions de «Navegador de fitxers»."
    )
 
 
@@ -5412,6 +5536,10 @@ MSG_HASH(
    "Usuari"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "Sincronització rígida de la CPU i GPU. Redueix la latència a cost de rendiment."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_START,
    "Iniciar"
    )
@@ -5692,6 +5820,114 @@ MSG_HASH(
    "Jugant"
    )
 
+MSG_HASH(
+   MSG_APPLICATION_DIR,
+   "Directori de l’aplicació"
+   )
+MSG_HASH(
+   MSG_APPLYING_CHEAT,
+   "S’estan aplicant els canvis de trucs."
+   )
+MSG_HASH(
+   MSG_APPLYING_PATCH,
+   "S’està aplicant el pedaç: %s"
+   )
+MSG_HASH(
+   MSG_APPLYING_SHADER,
+   "S’està aplicant el shader"
+   )
+MSG_HASH(
+   MSG_AUDIO_MUTED,
+   "S’ha silenciat l’àudio."
+   )
+MSG_HASH(
+   MSG_AUDIO_UNMUTED,
+   "S’ha activat l’àudio."
+   )
+MSG_HASH(
+   MSG_AUTOCONFIG_FILE_ERROR_SAVING,
+   "S’ha produït un error desant el perfil del controlador."
+   )
+MSG_HASH(
+   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
+   "S’ha desat correctament el perfil del controlador."
+   )
+MSG_HASH(
+   MSG_AUTOSAVE_FAILED,
+   "No s’ha pogut inicialitzar el desament automàtic."
+   )
+MSG_HASH(
+   MSG_AUTO_SAVE_STATE_TO,
+   "Desa l’estat automàticament a"
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "S’està blocant la sobreescriptura de SRAM"
+   )
+MSG_HASH(
+   MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
+   "S’està iniciant la interfície de comandes al port"
+   )
+MSG_HASH(
+   MSG_CANNOT_INFER_NEW_CONFIG_PATH,
+   "No es pot inferir el nou camí de configuració. Useu l’hora actual."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "S’ha activat el mode expert d’assoliments; s’han desactivat el desament d’estat i el rebobinat."
+   )
+MSG_HASH(
+   MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
+   "S’està comparant amb nombres màgics coneguts..."
+   )
+MSG_HASH(
+   MSG_COMPILED_AGAINST_API,
+   "Compilat amb l’API"
+   )
+MSG_HASH(
+   MSG_CONFIG_DIRECTORY_NOT_SET,
+   "No s’ha establert el directori de configuració. No es pot desar la nova configuració."
+   )
+MSG_HASH(
+   MSG_CONNECTED_TO,
+   "S’ha connectat a"
+   )
+MSG_HASH(
+   MSG_CONTENT_CRC32S_DIFFER,
+   "Els CRC32 dels continguts són diferents. No es poden usar jocs diferents."
+   )
+MSG_HASH(
+   MSG_PING_TOO_HIGH,
+   "El vostre ping és massa alt per aquest amfitrió."
+   )
+MSG_HASH(
+   MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
+   "S’ha omès la càrrega de contingut. La implementació el carregarà pel seu compte."
+   )
+MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "El nucli no admet estats desats."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
+   "S’ha creat correctament el fitxer d’opcions del nucli."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY,
+   "S’ha eliminat correctament el fitxer d’opcions del nucli."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_RESET,
+   "Totes les opcions del nucli s’han restablert als valors predeterminats."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSHED,
+   "S’han desat les opcions del nucli a:"
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSH_FAILED,
+   "No s’han pogut desar les opcions del nucli a:"
+   )
 MSG_HASH(
    MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
    "No s'ha pogut enviar el sobrenom a l'amfitrió."
