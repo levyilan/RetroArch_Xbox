@@ -364,7 +364,7 @@
 /* Sets how many milliseconds to delay after VSync before running the core.
  * Can reduce latency at cost of higher risk of stuttering.
  */
-#define DEFAULT_FRAME_DELAY 0
+#define DEFAULT_FRAME_DELAY 3
 #define MAXIMUM_FRAME_DELAY 19
 #define DEFAULT_FRAME_DELAY_AUTO false
 
@@ -576,7 +576,7 @@
 
 #ifdef HAVE_OZONE
 /* Ozone colour theme: 1 == Basic Black */
-#define DEFAULT_OZONE_COLOR_THEME 1
+#define DEFAULT_OZONE_COLOR_THEME 7
 #define DEFAULT_OZONE_COLLAPSE_SIDEBAR false
 #define DEFAULT_OZONE_TRUNCATE_PLAYLIST_NAME true
 #define DEFAULT_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME true
@@ -612,11 +612,11 @@
 
 #define DEFAULT_SETTINGS_SHOW_USER_INTERFACE true
 
-#define DEFAULT_SETTINGS_SHOW_AI_SERVICE true
+#define DEFAULT_SETTINGS_SHOW_AI_SERVICE false
 
 #define DEFAULT_SETTINGS_SHOW_ACCESSIBILITY true
 
-#define DEFAULT_SETTINGS_SHOW_POWER_MANAGEMENT true
+#define DEFAULT_SETTINGS_SHOW_POWER_MANAGEMENT false
 
 #define DEFAULT_SETTINGS_SHOW_ACHIEVEMENTS true
 
@@ -645,8 +645,8 @@
 #define DEFAULT_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE true
 
 static const bool quick_menu_show_add_to_favorites            = true;
-static const bool quick_menu_show_start_recording             = true;
-static const bool quick_menu_show_start_streaming             = true;
+static const bool quick_menu_show_start_recording             = false;
+static const bool quick_menu_show_start_streaming             = false;
 static const bool quick_menu_show_set_core_association        = true;
 static const bool quick_menu_show_reset_core_association      = true;
 static const bool quick_menu_show_options                     = true;
@@ -657,8 +657,8 @@ static const bool quick_menu_show_controls                    = true;
 static const bool quick_menu_show_cheats                      = true;
 static const bool quick_menu_show_shaders                     = true;
 static const bool quick_menu_show_information                 = true;
-static const bool quick_menu_show_recording                   = true;
-static const bool quick_menu_show_streaming                   = true;
+static const bool quick_menu_show_recording                   = false;
+static const bool quick_menu_show_streaming                   = false;
 
 static const bool quick_menu_show_save_core_overrides         = true;
 static const bool quick_menu_show_save_game_overrides         = true;
@@ -735,11 +735,11 @@ static const bool menu_savestate_resume     = false;
 static const bool content_show_settings     = true;
 static const bool content_show_favorites    = true;
 #ifdef HAVE_IMAGEVIEWER
-static const bool content_show_images       = true;
+static const bool content_show_images       = false;
 #endif
-static const bool content_show_music        = true;
+static const bool content_show_music        = false;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-static const bool content_show_video        = true;
+static const bool content_show_video        = false;
 #endif
 #if defined(HAVE_NETWORKING)
 #if defined(_3DS)
@@ -759,7 +759,7 @@ static const bool content_show_history      = true;
 
 static const bool content_show_playlists    = true;
 #if defined(HAVE_LIBRETRODB)
-#define DEFAULT_MENU_CONTENT_SHOW_EXPLORE true
+#define DEFAULT_MENU_CONTENT_SHOW_EXPLORE false
 #endif
 #define DEFAULT_MENU_CONTENT_SHOW_CONTENTLESS_CORES MENU_CONTENTLESS_CORES_DISPLAY_SINGLE_PURPOSE
 
@@ -801,7 +801,7 @@ static const float menu_header_opacity = 1.000;
 #define DEFAULT_MENU_SHADER_PIPELINE 2
 #endif
 
-#define DEFAULT_SHOW_ADVANCED_SETTINGS false
+#define DEFAULT_SHOW_ADVANCED_SETTINGS true
 
 #define DEFAULT_RGUI_COLOR_THEME RGUI_THEME_CLASSIC_GREEN
 #define DEFAULT_RGUI_TRANSPARENCY true
@@ -837,8 +837,8 @@ static const bool default_auto_remaps_enable = true;
 static const bool default_global_core_options = false;
 static const bool default_auto_shaders_enable = true;
 
-static const bool default_sort_savefiles_enable = false;
-static const bool default_sort_savestates_enable = false;
+static const bool default_sort_savefiles_enable = true;
+static const bool default_sort_savestates_enable = true;
 static const bool default_sort_savefiles_by_content_enable = false;
 static const bool default_sort_savestates_by_content_enable = false;
 static const bool default_sort_screenshots_by_content_enable = false;
@@ -1140,7 +1140,7 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_FPS_SHOW false
 
 /* FPS display will be updated at the set interval (in frames) */
-#define DEFAULT_FPS_UPDATE_INTERVAL 256
+#define DEFAULT_FPS_UPDATE_INTERVAL 60
 
 /* Memory status display will be updated at the set interval (in frames) */
 #define DEFAULT_MEMORY_UPDATE_INTERVAL 256
@@ -1278,13 +1278,13 @@ static const bool savestate_thumbnail_enable = false;
 
 /* When creating save (srm) files, compress
  * written data */
-#define DEFAULT_SAVE_FILE_COMPRESSION false
+#define DEFAULT_SAVE_FILE_COMPRESSION true
 
 /* When creating save state files, compress
  * written data */
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
 /* TODO/FIXME Apparently this is an issue on UWP for now, so disable it for now */
-#define DEFAULT_SAVESTATE_FILE_COMPRESSION false
+#define DEFAULT_SAVESTATE_FILE_COMPRESSION true
 #else
 #define DEFAULT_SAVESTATE_FILE_COMPRESSION true
 #endif
@@ -1432,7 +1432,7 @@ static const int default_content_favorites_size = 200;
 
 #define DEFAULT_ANALOG_DEADZONE 0.0f
 
-#define DEFAULT_ANALOG_SENSITIVITY 1.0f
+#define DEFAULT_ANALOG_SENSITIVITY 1.4f
 
 /* Describes speed of which turbo-enabled buttons toggle. */
 static const unsigned turbo_period        = 6;
