@@ -78,12 +78,6 @@
 
 #include "netplay_private.h"
 
-#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY) && !defined(_3DS)
-#ifndef HAVE_INET6
-#define HAVE_INET6 1
-#endif
-#endif
-
 #ifdef TCP_NODELAY
 #define SET_TCP_NODELAY(fd) \
    { \
@@ -336,16 +330,8 @@ static bool netplay_lan_ad_client_response(void)
          continue;
 
       /* And that we know how to handle it */
-#ifdef HAVE_INET6
-      if (their_addr.ss_family == AF_INET6)
-      {
-         /* Check for IPv4 tunneling */
-         if (!netplay_6to4(&their_addr))
-            continue;
-      }
-      else if (their_addr.ss_family != AF_INET)
+      if (!addr_6to4(&their_addr))
          continue;
-#endif
 
       if (!netplay_is_lan_address((struct sockaddr_in*)&their_addr))
          continue;
@@ -551,16 +537,8 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          return true;
       }
 
-#ifdef HAVE_INET6
-      if (their_addr.ss_family == AF_INET6)
-      {
-         /* Check for IPv4 tunneling */
-         if (!netplay_6to4(&their_addr))
-            return true;
-      }
-      else if (their_addr.ss_family != AF_INET)
+      if (!addr_6to4(&their_addr))
          return true;
-#endif
 
       if (!netplay_is_lan_address((struct sockaddr_in*)&their_addr))
          return true;
@@ -4860,9 +4838,17 @@ static void relay_chat(netplay_t *netplay, const char *nick, const char *msg)
 static void show_chat(netplay_t *netplay, const char *nick, const char *msg)
 {
    char formatted_chat[NETPLAY_CHAT_MAX_SIZE];
-   /* Truncate the message if necessary. Truncation here is intentional. */
-   int ret = snprintf(formatted_chat, sizeof(formatted_chat), "%s: %s", nick, msg);
-   (void)ret;
+
+   /* Truncate the message if necessary.
+      Truncation here is intentional. */
+#ifdef GEKKO
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-truncation"
+#endif
+   snprintf(formatted_chat, sizeof(formatted_chat), "%s: %s", nick, msg);
+#ifdef GEKKO
+#pragma GCC diagnostic pop
+#endif
 
    RARCH_LOG("[Netplay] %s\n", formatted_chat);
 
@@ -8862,33 +8848,6 @@ bool netplay_is_lan_address(struct sockaddr_in *addr)
          return true;
 
    return false;
-}
-
-bool netplay_6to4(struct sockaddr_storage *addr)
-{
-#ifdef HAVE_INET6
-   /* ::ffff:a.b.c.d */
-   static const uint16_t preffix[] = {0,0,0,0,0,0xffff};
-   uint32_t address;
-   uint16_t port;
-   struct sockaddr_in6 *addr6 = (struct sockaddr_in6*)addr;
-   struct sockaddr_in  *addr4 = (struct sockaddr_in*)addr;
-
-   /* Is the address provided an IPv4? */
-   if (memcmp(&addr6->sin6_addr, preffix, sizeof(preffix)))
-      return false;
-
-   memcpy(&address, ((uint8_t*)&addr6->sin6_addr) + sizeof(preffix),
-      sizeof(address));
-   port = addr6->sin6_port;
-
-   memset(addr, 0, sizeof(*addr));
-   addr4->sin_family = AF_INET;
-   addr4->sin_port   = port;
-   memcpy(&addr4->sin_addr, &address, sizeof(addr4->sin_addr));
-#endif
-
-   return true;
 }
 
 /* Netplay Widgets */
