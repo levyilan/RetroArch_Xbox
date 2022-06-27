@@ -43,16 +43,14 @@ gfx_display_t *disp_get_ptr(void)
    return &dispgfx_st;
 }
 
-static bool gfx_display_null_font_init_first(
+static bool gfx_display_font_init_first(
       void **font_handle, void *video_data,
       const char *font_path, float font_size,
-      bool is_threaded)
+      bool is_threaded, enum font_driver_render_api font_type)
 {
    font_data_t **handle = (font_data_t**)font_handle;
    return ((*handle = font_driver_init_first(video_data,
-         font_path, font_size, true,
-         is_threaded,
-         FONT_DRIVER_RENDER_DONT_CARE)));
+         font_path, font_size, true, is_threaded, font_type)));
 }
 
 static const float *null_get_default_matrix(void)
@@ -69,7 +67,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_null = {
    NULL,                                     /* get_default_mvp */
    null_get_default_matrix,
    null_get_default_matrix,
-   gfx_display_null_font_init_first,
+   FONT_DRIVER_RENDER_DONT_CARE,
    GFX_VIDEO_DRIVER_GENERIC,
    "null",
    false,
@@ -487,9 +485,9 @@ font_data_t *gfx_display_font_file(
    if (font_size < 2.0f)
       font_size = 2.0f;
 
-   if (!dispctx->font_init_first((void**)&font_data,
+   if (!gfx_display_font_init_first((void**)&font_data,
             video_driver_get_ptr(),
-            fontpath, font_size, is_threaded))
+            fontpath, font_size, is_threaded, dispctx->font_type))
       return NULL;
 
    return font_data;
@@ -1030,24 +1028,6 @@ void gfx_display_draw_cursor(
       dispctx->draw(&draw, userdata, video_width, video_height);
    if (dispctx->blend_end)
       dispctx->blend_end(userdata);
-}
-
-/* Setup: Initializes the font associated
- * to the menu driver */
-font_data_t *gfx_display_font(
-      gfx_display_t *p_disp,
-      enum application_special_type type,
-      float menu_font_size,
-      bool is_threaded)
-{
-   char fontpath[PATH_MAX_LENGTH];
-
-   fontpath[0] = '\0';
-
-   fill_pathname_application_special(
-         fontpath, sizeof(fontpath), type);
-
-   return gfx_display_font_file(p_disp, fontpath, menu_font_size, is_threaded);
 }
 
 /* Returns the OSK key at a given position */

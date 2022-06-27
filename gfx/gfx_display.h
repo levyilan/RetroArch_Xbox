@@ -30,7 +30,6 @@
 #include <gfx/math/matrix_4x4.h>
 
 #include "../retroarch.h"
-#include "../file_path_special.h"
 #include "../gfx/font_driver.h"
 
 RETRO_BEGIN_DECLS
@@ -137,11 +136,7 @@ typedef struct gfx_display_ctx_driver
    const float *(*get_default_vertices)(void);
    /* Get the default texture coordinates matrix */
    const float *(*get_default_tex_coords)(void);
-   /* Initialize the first compatible font driver for this menu driver. */
-   bool (*font_init_first)(
-         void **font_handle, void *video_data,
-         const char *font_path, float font_size,
-         bool is_threaded);
+   enum font_driver_render_api  font_type;
    enum gfx_display_driver_type type;
    const char *ident;
    bool handles_transform;
@@ -246,12 +241,6 @@ void gfx_display_draw_text(
       uint32_t color, enum text_alignment text_align,
       float scale_factor, bool shadows_enable, float shadow_offset,
       bool draw_outside);
-
-font_data_t *gfx_display_font(
-      gfx_display_t *p_disp,
-      enum application_special_type type,
-      float font_size,
-      bool video_is_threaded);
 
 void gfx_display_scissor_begin(
       gfx_display_t *p_disp,
