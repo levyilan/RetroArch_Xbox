@@ -30,6 +30,8 @@
 
 #include <net/net_compat.h>
 
+#include "../../msg_hash.h"
+
 #include "../natt.h"
 
 #define NETPLAY_NICK_LEN         32
@@ -139,6 +141,7 @@ typedef struct netplay netplay_t;
 typedef struct netplay_client_info
 {
    uint32_t protocol;
+   uint32_t devices;
    int32_t  ping;
    int      id;
    enum     rarch_netplay_connection_mode mode;
@@ -148,7 +151,7 @@ typedef struct netplay_client_info
 typedef struct mitm_server
 {
    const char *name;
-   const char *description;
+   enum msg_hash_enums description;
 } mitm_server_t;
 
 struct netplay_room
@@ -256,6 +259,7 @@ typedef struct
 
 net_driver_state_t *networking_state_get_ptr(void);
 
+bool netplay_compatible_version(const char *version);
 bool netplay_decode_hostname(const char *hostname,
    char *address, unsigned *port, char *session, size_t len);
 bool netplay_is_lan_address(struct sockaddr_in *addr);

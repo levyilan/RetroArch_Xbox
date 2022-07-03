@@ -137,7 +137,7 @@
 #define BYTES_TO_GB(bytes) (((bytes) / 1024) / 1024 / 1024)
 
 #ifdef HAVE_NETWORKING
-#if !defined(HAVE_SOCKET_LEGACY) && (!defined(SWITCH) || defined(SWITCH) && defined(HAVE_LIBNX)) || defined(GEKKO)
+#if !defined(HAVE_SOCKET_LEGACY) || defined(GEKKO)
 #include <net/net_ifinfo.h>
 #endif
 #endif
@@ -2364,7 +2364,7 @@ static int create_string_list_rdb_entry_int(
    string_list_join_concat(output_label, str_len, &str_list, "|");
    string_list_deinitialize(&str_list);
 
-   snprintf(tmp, sizeof(tmp), "%s : %d", desc, actual_int);
+   snprintf(tmp, sizeof(tmp), "%s: %d", desc, actual_int);
    menu_entries_append_enum(list, tmp, output_label,
          enum_idx,
          0, 0, 0);
@@ -3913,7 +3913,7 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
 #endif
 
 #ifdef HAVE_NETWORKING
-#if !defined (HAVE_SOCKET_LEGACY) || defined(GEKKO)
+#if !defined(HAVE_SOCKET_LEGACY) || defined(GEKKO)
    if (menu_entries_append_enum(info_list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION),
          msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_INFORMATION),
@@ -5316,32 +5316,38 @@ end:
 static unsigned menu_displaylist_parse_netplay_mitm_server_list(
       menu_displaylist_info_t *info, settings_t *settings)
 {
-   unsigned count  = 0;
    size_t i;
-   size_t list_len = ARRAY_SIZE(netplay_mitm_server_list);
+   const char *netplay_mitm_server;
+   unsigned count = 0;
 
    if (!settings)
       goto end;
 
-   for (i = 0; i < list_len; i++)
+   netplay_mitm_server = settings->arrays.netplay_mitm_server;
+
+   for (i = 0; i < ARRAY_SIZE(netplay_mitm_server_list); i++)
    {
-       /* Add menu entry */
-       if (menu_entries_append_enum(info->list,
-             netplay_mitm_server_list[i].description,
-             netplay_mitm_server_list[i].name,
-             MENU_ENUM_LABEL_NETPLAY_MITM_SERVER_LOCATION,
-             MENU_SETTING_DROPDOWN_ITEM_NETPLAY_MITM_SERVER,
-             0, i))
-       {
-          if (string_is_equal(settings->arrays.netplay_mitm_server, netplay_mitm_server_list[i].name))
-          {
-             menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[count].actiondata;
-             if (cbs)
-                cbs->checked = true;
-             menu_navigation_set_selection(count);
-          }
-          count++;
-       }
+      const mitm_server_t *server = &netplay_mitm_server_list[i];
+
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(server->description), server->name,
+            MENU_ENUM_LABEL_NETPLAY_MITM_SERVER_LOCATION,
+            MENU_SETTING_DROPDOWN_ITEM_NETPLAY_MITM_SERVER,
+            0, i))
+      {
+         if (string_is_equal(server->name, netplay_mitm_server))
+         {
+            menu_file_list_cbs_t *cbs =
+               (menu_file_list_cbs_t*)info->list->list[count].actiondata;
+
+            if (cbs)
+               cbs->checked = true;
+
+            menu_navigation_set_selection(count);
+         }
+
+         count++;
+      }
    }
 
 end:
@@ -5351,7 +5357,7 @@ end:
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
             msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
             MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-            FILE_TYPE_NONE, 0, 0))
+            0, 0, 0))
          count++;
 
    return count;
@@ -7185,32 +7191,34 @@ unsigned menu_displaylist_build_list(
             count++;
          break;
       case DISPLAYLIST_NETWORK_INFO:
-#if defined(HAVE_NETWORKING) && (!defined(HAVE_SOCKET_LEGACY) && (!defined(SWITCH) || defined(SWITCH) && defined(HAVE_LIBNX)) || defined(GEKKO))
-         network_init();
+#ifdef HAVE_NETWORKING
+#if !defined(HAVE_SOCKET_LEGACY) || defined(GEKKO)
          {
-            net_ifinfo_t      netlist;
+            net_ifinfo_t interfaces = {0};
 
-            if (net_ifinfo_new(&netlist))
+            network_init();
+
+            if (net_ifinfo_new(&interfaces))
             {
-               unsigned k;
-               for (k = 0; k < netlist.size; k++)
+               size_t i;
+               char buf[768];
+
+               for (i = 0; i < interfaces.size; i++)
                {
-                  char tmp[255];
+                  struct net_ifinfo_entry *entry = &interfaces.entries[i];
 
-                  tmp[0] = '\0';
-
-                  snprintf(tmp, sizeof(tmp), "%s (%s) : %s\n",
-                        msg_hash_to_str(MSG_INTERFACE),
-                        netlist.entries[k].name, netlist.entries[k].host);
-                  if (menu_entries_append_enum(list, tmp, "",
-                           MENU_ENUM_LABEL_NETWORK_INFO_ENTRY,
-                           MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
+                  snprintf(buf, sizeof(buf), "%s (%s) : %s\n",
+                     msg_hash_to_str(MSG_INTERFACE), entry->name, entry->host);
+                  if (menu_entries_append_enum(list, buf, entry->name,
+                        MENU_ENUM_LABEL_NETWORK_INFO_ENTRY,
+                        MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
                      count++;
                }
 
-               net_ifinfo_free(&netlist);
+               net_ifinfo_free(&interfaces);
             }
          }
+#endif
 #endif
          break;
       case DISPLAYLIST_OPTIONS_CHEATS:
@@ -7951,8 +7959,9 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_NETPLAY_LOBBY_FILTERS_LIST:
          {
             menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_CONNECTABLE, PARSE_ONLY_BOOL, true},
-               {MENU_ENUM_LABEL_NETPLAY_SHOW_PASSWORDED,       PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_CONNECTABLE,     PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_INSTALLED_CORES, PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_NETPLAY_SHOW_PASSWORDED,           PARSE_ONLY_BOOL, true},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -10410,17 +10419,21 @@ static unsigned menu_displaylist_build_shader_parameter(
 #ifdef HAVE_NETWORKING
 unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 {
-   int i;
+   int i, j;
    char buf[256];
    char passworded[64];
    char country[8];
    const char *room_type;
    struct netplay_room *room;
-   unsigned count             = 0;
-   settings_t *settings       = config_get_ptr();
-   net_driver_state_t *net_st = networking_state_get_ptr();
-   bool show_only_connectable = settings->bools.netplay_show_only_connectable;
-   bool show_passworded       = settings->bools.netplay_show_passworded;
+   unsigned count                 = 0;
+   core_info_list_t *coreinfos    = NULL;
+   settings_t *settings           = config_get_ptr();
+   net_driver_state_t *net_st     = networking_state_get_ptr();
+   bool show_only_connectable     =
+      settings->bools.netplay_show_only_connectable;
+   bool show_only_installed_cores =
+      settings->bools.netplay_show_only_installed_cores;
+   bool show_passworded           = settings->bools.netplay_show_passworded;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, list);
 
@@ -10480,12 +10493,18 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
       count++;
 #endif
 
+   core_info_get_list(&coreinfos);
+
    for (i = 0; i < net_st->room_count; i++)
    {
       room = &net_st->room_list[i];
 
       /* Get rid of any room that is not running RetroArch. */
       if (!room->is_retroarch)
+         continue;
+
+      /* Get rid of rooms running older (incompatible) versions. */
+      if (!netplay_compatible_version(room->retroarch_version))
          continue;
 
       /* Get rid of any room that is not connectable,
@@ -10503,6 +10522,20 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
          room_type = msg_hash_to_str(MSG_INTERNET_RELAY);
       else
          room_type = msg_hash_to_str(MSG_INTERNET);
+
+      /* Get rid of any room running a core that we don't have installed,
+         if the user opt-in. */
+      if (show_only_installed_cores)
+      {
+         for (j = 0; j < coreinfos->count; j++)
+         {
+            if (string_is_equal_case_insensitive(coreinfos->list[j].core_name,
+                  room->corename))
+               break;
+         }
+         if (j >= coreinfos->count)
+            continue;
+      }
 
       /* Get rid of any room that is passworded,
          if the user opt-in. */

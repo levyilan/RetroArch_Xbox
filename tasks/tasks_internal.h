@@ -91,6 +91,7 @@ bool task_push_netplay_lan_scan(void (*cb)(const void*), unsigned timeout);
 
 bool task_push_netplay_crc_scan(uint32_t crc, const char *content,
       const char *subsystem, const char *core, const char *hostname);
+bool task_push_netplay_content_reload(const char *hostname);
 
 bool task_push_netplay_nat_traversal(void *data, uint16_t port);
 bool task_push_netplay_nat_close(void *data);
@@ -229,7 +230,7 @@ struct screenshot_task_state
    unsigned pixel_format_type;
 
    char filename[PATH_MAX_LENGTH];
-   char shotname[256];
+   char shotname[NAME_MAX_LENGTH];
 
    bool bgr24;
    bool silence;
