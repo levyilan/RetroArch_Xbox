@@ -63,7 +63,7 @@ struct gfx_widget_load_content_animation_state
    unsigned bg_width;
    unsigned bg_height;
 
-   gfx_timer_t timer;      /* float alignment */
+   float timer;      /* float alignment */
    float bg_x;
    float bg_y;
    float alpha;
@@ -395,8 +395,9 @@ bool gfx_widget_start_load_content_animation(void)
 
          if (!string_is_empty(playlist_path))
          {
-            fill_pathname_base_noext(state->system_name, playlist_path,
+            fill_pathname_base(state->system_name, playlist_path,
                   sizeof(state->system_name));
+            path_remove_extension(state->system_name);
 
             /* Exclude history and favourites playlists */
             if (string_ends_with_size(state->system_name, "_history",
@@ -418,8 +419,11 @@ bool gfx_widget_start_load_content_animation(void)
    /* If we haven't yet set the content name,
     * use content file name as a fallback */
    if (!has_content)
-      fill_pathname_base_noext(state->content_name, content_path,
+   {
+      fill_pathname_base(state->content_name, content_path,
             sizeof(state->content_name));
+      path_remove_extension(state->content_name);
+   }
 
    /* Check whether system name has been set */
    if (!has_system)
@@ -805,8 +809,9 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                   state->icon_texture,
                   icon_x,
                   state->icon_y,
-                  0.0f,
-                  1.0f,
+                  0.0f, /* rad */
+                  1.0f, /* cos(rad)   = cos(0)  = 1.0f */
+                  0.0f, /* sine(rad)  = sine(0) = 0.0f */
                   state->icon_color);
 
             if (dispctx && dispctx->blend_end)

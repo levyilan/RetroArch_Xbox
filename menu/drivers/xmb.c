@@ -1093,11 +1093,12 @@ static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
 
    if (tmp)
    {
-      fill_pathname_join_noext(
+      fill_pathname_join(
             path,
             dir_dynamic_wallpapers,
             tmp,
             sizeof(path));
+      path_remove_extension(path);
       free(tmp);
    }
 
@@ -1432,8 +1433,6 @@ static void xmb_update_savestate_thumbnail_image(void *data)
    if (!((xmb->is_quick_menu || xmb->is_state_slot) && xmb->libretro_running))
       return;
 
-   xmb->thumbnails.savestate.core_aspect = true;
-
    /* If path is empty, just reset thumbnail */
    if (string_is_empty(xmb->savestate_thumbnail_file_path))
       gfx_thumbnail_reset(&xmb->thumbnails.savestate);
@@ -1449,6 +1448,8 @@ static void xmb_update_savestate_thumbnail_image(void *data)
                &xmb->thumbnails.savestate,
                thumbnail_upscale_threshold);
    }
+
+   xmb->thumbnails.savestate.core_aspect = true;
 }
 
 /* Is called when the pointer position changes within a list/sub-list (vertically) */
@@ -1936,8 +1937,9 @@ static void xmb_set_title(xmb_handle_t *xmb)
       if (!path)
          return;
 
-      fill_pathname_base_noext(
+      fill_pathname_base(
             xmb->title_name, path, sizeof(xmb->title_name));
+      path_remove_extension(xmb->title_name);
 
       /* Add current search terms */
       menu_entries_search_append_terms_string(
@@ -2261,18 +2263,24 @@ static void xmb_context_reset_horizontal_list(
          iconpath[0]       = sysname[0]             =
             texturepath[0] = content_texturepath[0] = '\0';
 
-         fill_pathname_base_noext(sysname, path, sizeof(sysname));
+         fill_pathname_base(sysname, path, sizeof(sysname));
+         path_remove_extension(sysname);
          fill_pathname_application_special(iconpath, sizeof(iconpath),
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
-         fill_pathname_join_concat(texturepath, iconpath, sysname,
-               FILE_PATH_PNG_EXTENSION, sizeof(texturepath));
+         fill_pathname_join(texturepath, iconpath, sysname,
+               sizeof(texturepath));
+         strlcat(texturepath, FILE_PATH_PNG_EXTENSION, sizeof(texturepath));
 
          /* If the playlist icon doesn't exist return default */
 
          if (!path_is_valid(texturepath))
-               fill_pathname_join_concat(texturepath, iconpath, "default",
-               FILE_PATH_PNG_EXTENSION, sizeof(texturepath));
+         {
+               fill_pathname_join(texturepath, iconpath, "default",
+               sizeof(texturepath));
+               strlcat(texturepath, FILE_PATH_PNG_EXTENSION,
+                     sizeof(texturepath));
+         }
 
          ti.width         = 0;
          ti.height        = 0;
@@ -2869,6 +2877,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS:
       case MENU_ENUM_LABEL_NETPLAY_LOBBY_FILTERS:
       case MENU_ENUM_LABEL_NETPLAY_KICK:
+      case MENU_ENUM_LABEL_NETPLAY_BAN:
          return xmb->textures.list[XMB_TEXTURE_NETWORK];
 #endif
       case MENU_ENUM_LABEL_BLUETOOTH_SETTINGS:
@@ -3274,7 +3283,7 @@ static int xmb_draw_item(
       entry_path[0] = '\0';
       strlcpy(entry_path, entry.path, sizeof(entry_path));
 
-      fill_short_pathname_representation(entry_path, entry_path,
+      fill_pathname(entry_path, path_basename(entry_path), "",
             sizeof(entry_path));
 
       if (!string_is_empty(entry_path))
@@ -3628,7 +3637,6 @@ static int xmb_draw_item(
       )
    {
       math_matrix_4x4 mymat_tmp;
-      gfx_display_ctx_rotate_draw_t rotate_draw;
       uintptr_t texture        = xmb_icon_get_id(xmb, core_node, node,
             entry.enum_idx, entry.path, entry.label,
             entry_type, (i == current), entry.checked);
@@ -3674,14 +3682,26 @@ static int xmb_draw_item(
          }
       }
 
-      rotate_draw.matrix       = &mymat_tmp;
-      rotate_draw.rotation     = 0;
-      rotate_draw.scale_x      = scale_factor;
-      rotate_draw.scale_y      = scale_factor;
-      rotate_draw.scale_z      = 1;
-      rotate_draw.scale_enable = true;
+      if (!p_disp->dispctx->handles_transform)
+      {
+         float cosine             = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
+         float sine               = 0.0f; /* sine(rad) = sine(0) = 0.0f */
+         gfx_display_rotate_z(p_disp, &mymat_tmp, cosine, sine, userdata);
 
-      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+         if (scale_factor != 1.0f)
+         {
+            static math_matrix_4x4 matrix_scaled = {
+                { 0.0f,          0.0f,          0.0f,          0.0f ,
+                  0.0f,          0.0f,          0.0f,          0.0f ,
+                  0.0f,          0.0f,          0.0f,          0.0f ,
+                  0.0f,          0.0f,          0.0f,          1.0f } 
+            };
+            MAT_ELEM_4X4(matrix_scaled, 0, 0)    = scale_factor;
+            MAT_ELEM_4X4(matrix_scaled, 1, 1)    = scale_factor;
+            MAT_ELEM_4X4(matrix_scaled, 2, 2)    = 1.0f;
+            matrix_4x4_multiply(mymat_tmp, matrix_scaled, mymat_tmp);
+         }
+      }
 
       xmb_draw_icon(
             userdata,
@@ -5027,7 +5047,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 {
    math_matrix_4x4 mymat;
    unsigned i;
-   gfx_display_ctx_rotate_draw_t rotate_draw;
    char msg[1024];
    char title_msg[255];
    char title_truncated[255];
@@ -5184,14 +5203,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             video_width, video_height, xmb->font);
    }
 
-   rotate_draw.matrix       = &mymat;
-   rotate_draw.rotation     = 0;
-   rotate_draw.scale_x      = 1;
-   rotate_draw.scale_y      = 1;
-   rotate_draw.scale_z      = 1;
-   rotate_draw.scale_enable = true;
-
-   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+   if (!p_disp->dispctx->handles_transform)
+   {
+      float cosine             = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
+      float sine               = 0.0f; /* sine(rad) = sine(0) = 0.0f */
+      gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
+   }
 
    /**************************/
    /* Draw thumbnails: START */
@@ -5571,7 +5588,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
          if (xmb_item_color[3] != 0)
          {
-            gfx_display_ctx_rotate_draw_t rotate_draw;
             math_matrix_4x4 mymat_tmp;
             uintptr_t texture        = node->icon;
             float x                  = xmb->x + xmb->categories_x_pos +
@@ -5603,14 +5619,27 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                }
             }
 
-            rotate_draw.matrix       = &mymat_tmp;
-            rotate_draw.rotation     = 0;
-            rotate_draw.scale_x      = scale_factor;
-            rotate_draw.scale_y      = scale_factor;
-            rotate_draw.scale_z      = 1;
-            rotate_draw.scale_enable = true;
+            if (!p_disp->dispctx->handles_transform)
+            {
+               float cosine     = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
+               float sine       = 0.0f; /* sine(rad) = sine(0) = 0.0f */
 
-            gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+               gfx_display_rotate_z(p_disp, &mymat_tmp, cosine, sine, userdata);
+
+               if (scale_factor != 1.0f)
+               {
+                  static math_matrix_4x4 matrix_scaled = {
+                     { 0.0f,          0.0f,          0.0f,          0.0f ,
+                        0.0f,          0.0f,          0.0f,          0.0f ,
+                        0.0f,          0.0f,          0.0f,          0.0f ,
+                        0.0f,          0.0f,          0.0f,          1.0f } 
+                  };
+                  MAT_ELEM_4X4(matrix_scaled, 0, 0)    = scale_factor;
+                  MAT_ELEM_4X4(matrix_scaled, 1, 1)    = scale_factor;
+                  MAT_ELEM_4X4(matrix_scaled, 2, 2)    = 1.0f;
+                  matrix_4x4_multiply(mymat_tmp, matrix_scaled, mymat_tmp);
+               }
+            }
 
             xmb_draw_icon(
                   userdata,

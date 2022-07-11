@@ -1948,14 +1948,14 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                const char *fullpath = path_get(RARCH_PATH_CONTENT);
                if (!string_is_empty(fullpath))
                {
-                  char temp_path[PATH_MAX_LENGTH];
-                  temp_path[0]     = '\0';
+                  char tmp_path[PATH_MAX_LENGTH];
+                  tmp_path[0]     = '\0';
 
                   if (string_is_empty(dir_system))
                      RARCH_WARN("[Environ]: SYSTEM DIR is empty, assume CONTENT DIR %s\n",
                            fullpath);
-                  fill_pathname_basedir(temp_path, fullpath, sizeof(temp_path));
-                  dir_set(RARCH_DIR_SYSTEM, temp_path);
+                  fill_pathname_basedir(tmp_path, fullpath, sizeof(tmp_path));
+                  dir_set(RARCH_DIR_SYSTEM, tmp_path);
                }
 
                *(const char**)data = dir_get_ptr(RARCH_DIR_SYSTEM);
@@ -3214,12 +3214,14 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       {
          /* Try to use the polled refresh rate first.  */
          float target_refresh_rate = video_driver_get_refresh_rate();
-         float video_refresh_rate  = settings ? settings->floats.video_refresh_rate : 0.0;
 
          /* If the above function failed [possibly because it is not
           * implemented], use the refresh rate set in the config instead. */
-         if (target_refresh_rate == 0.0f && video_refresh_rate != 0.0f)
-            target_refresh_rate = video_refresh_rate;
+         if (target_refresh_rate == 0.0f)
+         {
+            if (settings)
+               target_refresh_rate = settings->floats.video_refresh_rate;
+         }
 
          *(float *)data = target_refresh_rate;
          break;
@@ -5448,6 +5450,35 @@ bool runloop_event_init_core(
    float fastforward_ratio         = 0.0f;
    rarch_system_info_t *sys_info   = &runloop_st->system;
 
+#ifdef HAVE_NETWORKING
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+   {
+#ifdef HAVE_UPDATE_CORES
+      /* If netplay is enabled, update the core before initializing. */
+      const char *path_core = path_get(RARCH_PATH_CORE);
+
+      if (!string_is_empty(path_core) &&
+            !string_is_equal(path_core, "builtin"))
+      {
+         if (task_push_update_single_core(path_core,
+               settings->bools.core_updater_auto_backup,
+               settings->uints.core_updater_auto_backup_history_size,
+               settings->paths.directory_libretro,
+               settings->paths.directory_core_assets))
+            /* We must wait for the update to finish
+               before starting the core. */
+            task_queue_wait(NULL, NULL);
+      }
+#endif
+
+      /* We need this in order for core_info_current_supports_netplay
+         to work correctly at init_netplay,
+         called later at event_init_content. */
+      command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+      command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+   }
+#endif
+
    if (!init_libretro_symbols(runloop_st,
             type, &runloop_st->current_core))
       return false;
@@ -5461,10 +5492,14 @@ bool runloop_event_init_core(
    if (!sys_info->info.library_version)
       sys_info->info.library_version = "v0";
 
-   fill_pathname_join_concat_noext(
+   strlcpy(
          video_st->title_buf,
          msg_hash_to_str(MSG_PROGRAM),
+         sizeof(video_st->title_buf));
+   strlcat(video_st->title_buf,
          " ",
+         sizeof(video_st->title_buf));
+   strlcat(video_st->title_buf,
          sys_info->info.library_name,
          sizeof(video_st->title_buf));
    strlcat(video_st->title_buf, " ",
@@ -5764,10 +5799,14 @@ bool runloop_path_init_subsystem(void)
       from the main SRAM location. */
    if (!retroarch_override_setting_is_set(
             RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
-      fill_pathname_noext(runloop_st->name.savefile,
+   {
+      strlcpy(runloop_st->name.savefile,
             runloop_st->runtime_content_path_basename,
+            sizeof(runloop_st->name.savefile));
+      strlcat(runloop_st->name.savefile,
             ".srm",
             sizeof(runloop_st->name.savefile));
+   }
 
    if (path_is_directory(runloop_st->name.savefile))
    {
@@ -5802,22 +5841,34 @@ void runloop_path_fill_names(void)
       return;
 
    if (string_is_empty(runloop_st->name.ups))
-      fill_pathname_noext(runloop_st->name.ups,
+   {
+      strlcpy(runloop_st->name.ups,
             runloop_st->runtime_content_path_basename,
+            sizeof(runloop_st->name.ups));
+      strlcat(runloop_st->name.ups,
             ".ups",
             sizeof(runloop_st->name.ups));
+   }
 
    if (string_is_empty(runloop_st->name.bps))
-      fill_pathname_noext(runloop_st->name.bps,
+   {
+      strlcpy(runloop_st->name.bps,
             runloop_st->runtime_content_path_basename,
+            sizeof(runloop_st->name.bps));
+      strlcat(runloop_st->name.bps,
             ".bps",
             sizeof(runloop_st->name.bps));
+   }
 
    if (string_is_empty(runloop_st->name.ips))
-      fill_pathname_noext(runloop_st->name.ips,
+   {
+      strlcpy(runloop_st->name.ips,
             runloop_st->runtime_content_path_basename,
+            sizeof(runloop_st->name.ips));
+      strlcat(runloop_st->name.ips,
             ".ips",
             sizeof(runloop_st->name.ips));
+   }
 }
 
 
@@ -6410,9 +6461,8 @@ static enum runloop_state_enum runloop_check_state(
    {
       bool input_active = bits_any_set(current_bits.data, ARRAY_SIZE(current_bits.data));
 
-      menu_st->input_driver_flushing_input = input_active
-         ? menu_st->input_driver_flushing_input
-         : (menu_st->input_driver_flushing_input - 1);
+      if (!input_active)
+         menu_st->input_driver_flushing_input = (menu_st->input_driver_flushing_input - 1);
 
       if (input_active || (menu_st->input_driver_flushing_input > 0))
       {
@@ -6735,18 +6785,20 @@ static enum runloop_state_enum runloop_check_state(
       else
 #endif
       {
-         focused = pause_nonactive ? is_focused : true;
-         focused = focused && !uico_st->is_on_foreground;
+         if (pause_nonactive)
+            focused = is_focused && !uico_st->is_on_foreground;
+         else
+            focused = !uico_st->is_on_foreground;
       }
 
       if (action == old_action)
       {
-	      retro_time_t press_time           = current_time;
+	      retro_time_t press_time          = current_time;
 
 	      if (action == MENU_ACTION_NOOP)
-		      menu_st->noop_press_time   = press_time - menu_st->noop_start_time;
+		      menu_st->noop_press_time      = press_time - menu_st->noop_start_time;
 	      else
-		      menu_st->action_press_time = press_time - menu_st->action_start_time;
+		      menu_st->action_press_time    = press_time - menu_st->action_start_time;
       }
       else
       {
@@ -8462,20 +8514,35 @@ void runloop_path_set_names(void)
    runloop_state_t *runloop_st = &runloop_state;
    if (!retroarch_override_setting_is_set(
             RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
-      fill_pathname_noext(runloop_st->name.savefile,
+   {
+      strlcpy(runloop_st->name.savefile,
             runloop_st->runtime_content_path_basename,
-            ".srm", sizeof(runloop_st->name.savefile));
+            sizeof(runloop_st->name.savefile));
+      strlcat(runloop_st->name.savefile,
+            ".srm",
+            sizeof(runloop_st->name.savefile));
+   }
 
    if (!retroarch_override_setting_is_set(
             RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
-      fill_pathname_noext(runloop_st->name.savestate,
+   {
+      strlcpy(runloop_st->name.savestate,
             runloop_st->runtime_content_path_basename,
-            ".state", sizeof(runloop_st->name.savestate));
+            sizeof(runloop_st->name.savestate));
+      strlcat(runloop_st->name.savestate,
+            ".state",
+            sizeof(runloop_st->name.savestate));
+   }
 
 #ifdef HAVE_CHEATS
    if (!string_is_empty(runloop_st->runtime_content_path_basename))
-      fill_pathname_noext(runloop_st->name.cheatfile,
+   {
+      strlcpy(runloop_st->name.cheatfile,
             runloop_st->runtime_content_path_basename,
-            ".cht", sizeof(runloop_st->name.cheatfile));
+            sizeof(runloop_st->name.cheatfile));
+      strlcat(runloop_st->name.cheatfile,
+            ".cht",
+            sizeof(runloop_st->name.cheatfile));
+   }
 #endif
 }

@@ -1103,7 +1103,6 @@ static void audio_mixer_menu_stop_cb(
          }
          break;
       case AUDIO_MIXER_SOUND_STOPPED:
-         break;
       case AUDIO_MIXER_SOUND_REPEATED:
          break;
    }
@@ -1153,7 +1152,6 @@ static void audio_mixer_play_stop_sequential_cb(
          }
          break;
       case AUDIO_MIXER_SOUND_STOPPED:
-         break;
       case AUDIO_MIXER_SOUND_REPEATED:
          break;
    }
@@ -1167,8 +1165,8 @@ static bool audio_driver_mixer_get_free_stream_slot(
 
    if (type == AUDIO_STREAM_TYPE_USER)
    {
-      i     = 0;
-      count = AUDIO_MIXER_MAX_STREAMS;
+      i                        = 0;
+      count                    = AUDIO_MIXER_MAX_STREAMS;
    }
 
    for (; i < count; i++)
@@ -1189,7 +1187,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    audio_mixer_voice_t *voice    = NULL;
    audio_mixer_sound_t *handle   = NULL;
    audio_mixer_stop_cb_t stop_cb = audio_mixer_play_stop_cb;
-   bool looped                   = false;
+   bool looped                   = (params->state == AUDIO_STREAM_STATE_PLAYING_LOOPED);
    void *buf                     = NULL;
 
    if (params->stream_type == AUDIO_STREAM_TYPE_NONE)
@@ -1209,18 +1207,14 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
          break;
       case AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC:
       default:
-         if (!audio_driver_mixer_get_free_stream_slot(
-                  &free_slot, params->stream_type))
-            return false;
-         break;
+         return audio_driver_mixer_get_free_stream_slot(
+                  &free_slot, params->stream_type);
    }
 
    if (params->state == AUDIO_STREAM_STATE_NONE)
       return false;
 
-   buf = malloc(params->bufsize);
-
-   if (!buf)
+   if (!(buf = malloc(params->bufsize)))
       return false;
 
    memcpy(buf, params->buf, params->bufsize);
@@ -1266,19 +1260,11 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
 
    switch (params->state)
    {
-      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
-         looped = true;
-         voice = audio_mixer_play(handle, looped, params->volume,
-               audio_driver_st.resampler_ident,
-               audio_driver_st.resampler_quality, stop_cb);
-         break;
-      case AUDIO_STREAM_STATE_PLAYING:
-         voice = audio_mixer_play(handle, looped, params->volume,
-               audio_driver_st.resampler_ident,
-               audio_driver_st.resampler_quality, stop_cb);
-         break;
       case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
          stop_cb = audio_mixer_play_stop_sequential_cb;
+         /* fall-through */
+      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
+      case AUDIO_STREAM_STATE_PLAYING:
          voice = audio_mixer_play(handle, looped, params->volume,
                audio_driver_st.resampler_ident,
                audio_driver_st.resampler_quality, stop_cb);
@@ -1419,7 +1405,8 @@ void audio_driver_load_system_sounds(void)
       if (audio_driver_mixer_extension_supported(ext))
       {
          basename_noext[0] = '\0';
-         fill_pathname_base_noext(basename_noext, path, sizeof(basename_noext));
+         fill_pathname_base(basename_noext, path, sizeof(basename_noext));
+         path_remove_extension(basename_noext);
 
          if (string_is_equal_noncase(basename_noext, "ok"))
             path_ok = path;
@@ -1508,8 +1495,6 @@ void audio_driver_mixer_set_stream_volume(unsigned i, float vol)
 
 void audio_driver_mixer_stop_stream(unsigned i)
 {
-   bool set_state                         = false;
-
    if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
 
@@ -1518,28 +1503,23 @@ void audio_driver_mixer_stop_stream(unsigned i)
       case AUDIO_STREAM_STATE_PLAYING:
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
       case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
-         set_state = true;
+         {
+            audio_mixer_voice_t *voice     = audio_driver_st.mixer_streams[i].voice;
+
+            if (voice)
+               audio_mixer_stop(voice);
+            audio_driver_st.mixer_streams[i].state   = AUDIO_STREAM_STATE_STOPPED;
+            audio_driver_st.mixer_streams[i].volume  = 1.0f;
+         }
          break;
       case AUDIO_STREAM_STATE_STOPPED:
       case AUDIO_STREAM_STATE_NONE:
          break;
    }
-
-   if (set_state)
-   {
-      audio_mixer_voice_t *voice     = audio_driver_st.mixer_streams[i].voice;
-
-      if (voice)
-         audio_mixer_stop(voice);
-      audio_driver_st.mixer_streams[i].state   = AUDIO_STREAM_STATE_STOPPED;
-      audio_driver_st.mixer_streams[i].volume  = 1.0f;
-   }
 }
 
 void audio_driver_mixer_remove_stream(unsigned i)
 {
-   bool destroy                = false;
-
    if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
 
@@ -1549,31 +1529,28 @@ void audio_driver_mixer_remove_stream(unsigned i)
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
       case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
          audio_driver_mixer_stop_stream(i);
-         destroy = true;
-         break;
+         /* fall-through */
       case AUDIO_STREAM_STATE_STOPPED:
-         destroy = true;
+         {
+            audio_mixer_sound_t *handle = audio_driver_st.mixer_streams[i].handle;
+            if (handle)
+               audio_mixer_destroy(handle);
+
+            if (!string_is_empty(audio_driver_st.mixer_streams[i].name))
+               free(audio_driver_st.mixer_streams[i].name);
+
+            audio_driver_st.mixer_streams[i].state   = AUDIO_STREAM_STATE_NONE;
+            audio_driver_st.mixer_streams[i].stop_cb = NULL;
+            audio_driver_st.mixer_streams[i].volume  = 0.0f;
+            audio_driver_st.mixer_streams[i].handle  = NULL;
+            audio_driver_st.mixer_streams[i].voice   = NULL;
+            audio_driver_st.mixer_streams[i].name    = NULL;
+         }
          break;
       case AUDIO_STREAM_STATE_NONE:
          break;
    }
 
-   if (destroy)
-   {
-      audio_mixer_sound_t *handle = audio_driver_st.mixer_streams[i].handle;
-      if (handle)
-         audio_mixer_destroy(handle);
-
-      if (!string_is_empty(audio_driver_st.mixer_streams[i].name))
-         free(audio_driver_st.mixer_streams[i].name);
-
-      audio_driver_st.mixer_streams[i].state   = AUDIO_STREAM_STATE_NONE;
-      audio_driver_st.mixer_streams[i].stop_cb = NULL;
-      audio_driver_st.mixer_streams[i].volume  = 0.0f;
-      audio_driver_st.mixer_streams[i].handle  = NULL;
-      audio_driver_st.mixer_streams[i].voice   = NULL;
-      audio_driver_st.mixer_streams[i].name    = NULL;
-   }
 }
 
 bool audio_driver_mixer_toggle_mute(void)

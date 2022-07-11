@@ -3983,7 +3983,6 @@ static void materialui_render_menu_entry_default(
       int x_offset)
 {
    math_matrix_4x4 mymat;
-   gfx_display_ctx_rotate_draw_t rotate_draw;
    const char *entry_value                           = NULL;
    const char *entry_label                           = NULL;
    unsigned entry_type                               = 0;
@@ -4001,15 +4000,11 @@ static void materialui_render_menu_entry_default(
    bool draw_text_outside                            = (x_offset != 0);
    gfx_display_t *p_disp                             = disp_get_ptr();
 
+   if (!p_disp->dispctx->handles_transform)
    {
-      rotate_draw.matrix       = &mymat;
-      rotate_draw.rotation     = 0.0f;
-      rotate_draw.scale_x      = 1.0f;
-      rotate_draw.scale_y      = 1.0f;
-      rotate_draw.scale_z      = 1;
-      rotate_draw.scale_enable = true;
-
-      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+      float cosine     = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
+      float sine       = 0.0f; /* sine(rad) = sine(0) = 0.0f */
+      gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
    }
 
    /* Initial ticker configuration
@@ -4343,7 +4338,6 @@ static void materialui_render_menu_entry_playlist_list(
 {
    bool draw_divider;
    math_matrix_4x4 mymat;
-   gfx_display_ctx_rotate_draw_t rotate_draw;
    const char *entry_label    = NULL;
    int entry_x                = x_offset + node->x;
    int entry_y                = header_height - mui->scroll_y + node->y;
@@ -4355,15 +4349,11 @@ static void materialui_render_menu_entry_playlist_list(
    settings_t *settings       = config_get_ptr();
    gfx_display_t *p_disp      = disp_get_ptr();
 
+   if (!p_disp->dispctx->handles_transform)
    {
-      rotate_draw.matrix       = &mymat;
-      rotate_draw.rotation     = 0.0f;
-      rotate_draw.scale_x      = 1.0f;
-      rotate_draw.scale_y      = 1.0f;
-      rotate_draw.scale_z      = 1;
-      rotate_draw.scale_enable = true;
-
-      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+      float cosine     = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
+      float sine       = 0.0f; /* sine(rad) = sine(0) = 0.0f */
+      gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
    }
 
    /* Initial ticker configuration
@@ -4595,7 +4585,6 @@ static void materialui_render_menu_entry_playlist_dual_icon(
       int x_offset)
 {
    math_matrix_4x4 mymat;
-   gfx_display_ctx_rotate_draw_t rotate_draw;
    const char *entry_label = NULL;
    float entry_x           = (float)x_offset + node->x;
    float entry_y           = (float)header_height - mui->scroll_y + node->y;
@@ -4615,15 +4604,11 @@ static void materialui_render_menu_entry_playlist_dual_icon(
    gfx_display_t *p_disp   = disp_get_ptr();
    settings_t *settings    = config_get_ptr();
 
+   if (!p_disp->dispctx->handles_transform)
    {
-      rotate_draw.matrix       = &mymat;
-      rotate_draw.rotation     = 0.0f;
-      rotate_draw.scale_x      = 1.0f;
-      rotate_draw.scale_y      = 1.0f;
-      rotate_draw.scale_z      = 1;
-      rotate_draw.scale_enable = true;
-
-      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+      float cosine     = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
+      float sine       = 0.0f; /* sine(rad) = sine(0) = 0.0f */
+      gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
    }
 
    /* Initial ticker configuration
@@ -4890,7 +4875,6 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
       file_list_t *list, size_t selection)
 {
    math_matrix_4x4 mymat;
-   gfx_display_ctx_rotate_draw_t rotate_draw;
    materialui_node_t *node    = (materialui_node_t*)list->list[selection].userdata;
    float background_x         = (float)(x_offset + (int)mui->landscape_optimization.border_width);
    float background_y         = (float)header_height;
@@ -4913,15 +4897,11 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
        (background_height <= 0))
       return;
 
+   if (!p_disp->dispctx->handles_transform)
    {
-      rotate_draw.matrix       = &mymat;
-      rotate_draw.rotation     = 0.0f;
-      rotate_draw.scale_x      = 1.0f;
-      rotate_draw.scale_y      = 1.0f;
-      rotate_draw.scale_z      = 1;
-      rotate_draw.scale_enable = true;
-
-      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+      float cosine     = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
+      float sine       = 0.0f; /* sine(rad) = sine(0) = 0.0f */
+      gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
    }
 
    /* Draw sidebar background
@@ -6911,7 +6891,6 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 {
    int list_x_offset;
    math_matrix_4x4 mymat;
-   gfx_display_ctx_rotate_draw_t rotate_draw;
    materialui_handle_t *mui       = (materialui_handle_t*)data;
    settings_t *settings           = config_get_ptr();
    gfx_display_t *p_disp          = disp_get_ptr();
@@ -6945,14 +6924,12 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       return;
    }
 
-   rotate_draw.matrix       = &mymat;
-   rotate_draw.rotation     = 0.0f;
-   rotate_draw.scale_x      = 1.0f;
-   rotate_draw.scale_y      = 1.0f;
-   rotate_draw.scale_z      = 1;
-   rotate_draw.scale_enable = true;
-
-   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+   if (!p_disp->dispctx->handles_transform)
+   {
+      float cosine     = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
+      float sine       = 0.0f; /* sine(rad) = sine(0) = 0.0f */
+      gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
+   }
 
    video_driver_set_viewport(video_width, video_height, true, false);
 
@@ -10666,6 +10643,7 @@ static void materialui_list_insert(
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_KICK)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_BAN)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_LOAD)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR)) ||

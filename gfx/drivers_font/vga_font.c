@@ -29,8 +29,8 @@
 
 typedef struct
 {
-   const font_renderer_driver_t *vga_font_driver;
-   void *vga_font_data;
+   const font_renderer_driver_t *font_driver;
+   void *font_data;
    vga_t *vga;
 } vga_raster_t;
 
@@ -48,8 +48,8 @@ static void *vga_font_init(void *data,
    font_size = 1;
 
    if (!font_renderer_create_default(
-            &font->vga_font_driver,
-            &font->vga_font_data, font_path, font_size))
+            &font->font_driver,
+            &font->font_data, font_path, font_size))
    {
       RARCH_WARN("Couldn't initialize font renderer.\n");
       return NULL;
@@ -58,7 +58,19 @@ static void *vga_font_init(void *data,
    return font;
 }
 
-static void vga_font_render_free(void *data, bool is_threaded) { }
+static void vga_font_render_free(void *data, bool is_threaded)
+{
+  vga_raster_t *font  = (vga_raster_t*)data;
+
+  if (!font)
+     return;
+
+  if (font->font_driver && font->font_data && font->font_driver->free)
+     font->font_driver->free(font->font_data);
+
+  free(font);
+}
+
 static int vga_font_get_message_width(void *data, const char *msg,
       unsigned msg_len, float scale) { return 0; }
 static const struct font_glyph *vga_font_get_glyph(
@@ -69,6 +81,7 @@ static void vga_font_render_msg(
       void *data, const char *msg,
       const struct font_params *params)
 {
+#if 0
    float x, y, scale;
    unsigned width, height;
    unsigned new_x, new_y;
@@ -119,6 +132,7 @@ static void vga_font_render_msg(
    }
 
    /* TODO/FIXME - implement */
+#endif
 }
 
 font_renderer_t vga_font = {

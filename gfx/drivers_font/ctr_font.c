@@ -43,6 +43,9 @@ typedef struct
 static void* ctr_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
+   int i, j;
+   const uint8_t*     src         = NULL;
+   uint8_t* tmp                   = NULL;
    const struct font_atlas* atlas = NULL;
    ctr_font_t* font = (ctr_font_t*)calloc(1, sizeof(*font));
    ctr_video_t* ctr = (ctr_video_t*)data;
@@ -50,7 +53,7 @@ static void* ctr_font_init(void* data, const char* font_path,
    if (!font)
       return NULL;
 
-   font_size = 10;
+   font_size        = 10;
    if (!font_renderer_create_default(
             &font->font_driver,
             &font->font_data, font_path, font_size))
@@ -60,20 +63,19 @@ static void* ctr_font_init(void* data, const char* font_path,
       return NULL;
    }
 
-   atlas = font->font_driver->get_atlas(font->font_data);
+   atlas                = font->font_driver->get_atlas(font->font_data);
 
-   font->texture.width = next_pow2(atlas->width);
+   font->texture.width  = next_pow2(atlas->width);
    font->texture.height = next_pow2(atlas->height);
 #if FONT_TEXTURE_IN_VRAM
-   font->texture.data = vramAlloc(font->texture.width * font->texture.height);
-   uint8_t* tmp = linearAlloc(font->texture.width * font->texture.height);
+   font->texture.data   = vramAlloc(font->texture.width * font->texture.height);
+   tmp                  = linearAlloc(font->texture.width * font->texture.height);
 #else
-   font->texture.data = linearAlloc(font->texture.width * font->texture.height);
-   uint8_t* tmp = font->texture.data;
+   font->texture.data   = linearAlloc(font->texture.width * font->texture.height);
+   tmp                  = font->texture.data;
 #endif
 
-   int i, j;
-   const uint8_t*     src = atlas->buffer;
+   src                  = atlas->buffer;
 
    for (j = 0; (j < atlas->height) && (j < font->texture.height); j++)
       for (i = 0; (i < atlas->width) && (i < font->texture.width); i++)
@@ -163,17 +165,12 @@ static void ctr_font_render_line(
       unsigned width, unsigned height, unsigned text_align)
 {
    unsigned i;
-   int x, y;
    const struct font_glyph* glyph_q = NULL;
    ctr_vertex_t* v  = NULL;
    int delta_x      = 0;
    int delta_y      = 0;
-
-   if (!ctr)
-      return;
-
-   x                = roundf(pos_x * width);
-   y                = roundf((1.0f - pos_y) * height);
+   int x            = roundf(pos_x * width);
+   int y            = roundf((1.0f - pos_y) * height);
 
    switch (text_align)
    {
@@ -312,7 +309,8 @@ static void ctr_font_render_message(
    if (!font->font_driver->get_line_metrics ||
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
-      ctr_font_render_line(ctr, font, msg, strlen(msg),
+      unsigned msg_len = strlen(msg);
+      ctr_font_render_line(ctr, font, msg, msg_len,
                            scale, color, pos_x, pos_y,
                            width, height, text_align);
       return;

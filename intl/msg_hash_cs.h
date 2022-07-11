@@ -962,11 +962,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
-   "Měsíc Vydání"
+   "Měsíc Datumu Vydání"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   "Rok Vydání"
+   "Rok Datumu Vydání"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
@@ -5459,6 +5459,26 @@ MSG_HASH(
    "Zde zadejte adresu vlastního relay serveru. Formát: adresa nebo adresa|port."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
+   "Severní Amerika (Východní Pobřeží, USA)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2,
+   "Západní Evropa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3,
+   "Jižní Amerika (Jihovýchod, Brazílie)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
+   "Jihovýchodní Asie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
+   "Vlastní"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
    "Adresa Serveru"
    )
@@ -6435,6 +6455,10 @@ MSG_HASH(
    "Pouze Připojitelná Místa"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
+   "Pouze Nainstalovaná Jádra"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
    "Zaheslované Místnosti"
    )
@@ -6476,6 +6500,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_KICK,
    "Vyberte klienta z aktuálně hostované místnosti."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_BAN,
+   "Zablokovat Klienta"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_BAN,
+   "Zablokuje klienta z vaší aktuálně hostované místnosti."
    )
 
 /* Import Content */
@@ -10760,12 +10792,24 @@ MSG_HASH(
    "Nepodařilo se vyhodit klienta: \"%s\""
    )
 MSG_HASH(
+   MSG_NETPLAY_BANNED_CLIENT_S,
+   "Zabanován klient: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
+   "Nepodařilo se zabanovat klienta: \"%s\""
+   )
+MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
    "Přehrává se"
    )
 MSG_HASH(
    MSG_NETPLAY_STATUS_SPECTATING,
    "Sledující"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CLIENT_DEVICES,
+   "Zařízení"
    )
 MSG_HASH(
    MSG_NETPLAY_CHAT_SUPPORTED,
@@ -12015,6 +12059,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_HOST_FULL,
    "Hostitel netplay je plný"
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "Jste zabanován u tohoto hostitele"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,

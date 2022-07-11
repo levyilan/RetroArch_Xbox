@@ -112,6 +112,9 @@ void task_push_update_installed_cores(
       bool auto_backup, size_t auto_backup_history_size,
       const char *path_dir_libretro,
       const char *path_dir_core_assets);
+bool task_push_update_single_core(
+      const char *path_core, bool auto_backup, size_t auto_backup_history_size,
+      const char *path_dir_libretro, const char *path_dir_core_assets);
 #if defined(ANDROID)
 void *task_push_play_feature_delivery_core_install(
       core_updater_list_t* core_list,
@@ -259,7 +262,7 @@ void path_init_savefile_new(void);
 extern const char* const input_builtin_autoconfs[];
 void input_autoconfigure_blissbox_override_handler(
       int vid, int pid, char *device_name, size_t len);
-void input_autoconfigure_connect(
+bool input_autoconfigure_connect(
       const char *name,
       const char *display_name,
       const char *driver,

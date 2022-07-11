@@ -129,8 +129,8 @@ typedef struct disp_widget_msg
    float alpha;
    float unfold;
    float hourglass_rotation;
-   gfx_timer_t hourglass_timer; /* float alignment */
-   gfx_timer_t expiration_timer; /* float alignment */
+   float hourglass_timer; /* float alignment */
+   float expiration_timer; /* float alignment */
 
    int8_t task_progress;
    /* How many tasks have used this notification? */
@@ -286,7 +286,9 @@ void gfx_widgets_draw_icon(
       unsigned icon_height,
       uintptr_t texture,
       float x, float y,
-      float rotation, float scale_factor,
+      float radians,
+      float cosine,
+      float sine,
       float *color);
 
 void gfx_widgets_draw_text(

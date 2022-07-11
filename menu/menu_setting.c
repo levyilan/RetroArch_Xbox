@@ -1292,7 +1292,8 @@ static void setting_get_string_representation_st_path(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (setting)
-      fill_short_pathname_representation(s, setting->value.target.string, len);
+      fill_pathname(s, path_basename(setting->value.target.string),
+            "", len);
 }
 
 static void setting_get_string_representation_st_string(rarch_setting_t *setting,
@@ -3069,7 +3070,8 @@ static void setting_get_string_representation_video_filter(rarch_setting_t *sett
    if (!setting)
       return;
 
-   fill_short_pathname_representation(s, setting->value.target.string, len);
+   fill_pathname(s, path_basename(setting->value.target.string),
+         "", len);
 }
 
 static void setting_get_string_representation_state_slot(rarch_setting_t *setting,
@@ -8971,10 +8973,12 @@ static bool setting_append_list_input_player_options(
 
    for (j = 0; j < RARCH_BIND_LIST_END; j++)
    {
-      char label[255];
-      char name[255];
+      char label[NAME_MAX_LENGTH];
+      char name[NAME_MAX_LENGTH];
 
-      i = (j < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[j] : j;
+      i =  (j < RARCH_ANALOG_BIND_LIST_END) 
+         ? input_config_bind_order[j] 
+         : j;
 
       if (input_config_bind_map_get_meta(i))
          continue;
@@ -8982,9 +8986,10 @@ static bool setting_append_list_input_player_options(
       label[0] = name[0]          = '\0';
 
       if (!string_is_empty(buffer[user]))
-         fill_pathname_noext(label, buffer[user],
-               " ",
-               sizeof(label));
+      {
+         strlcpy(label, buffer[user], sizeof(label));
+         strlcat(label, " ", sizeof(label));
+      }
 
       if (
             settings->bools.input_descriptor_label_show
@@ -14452,14 +14457,13 @@ static bool setting_append_list(
             &settings->uints.input_block_timeout,
             MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT,
             MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
-            1,
+            0,
             &group_info,
             &subgroup_info,
             parent_group,
             general_write_handler,
             general_read_handler);
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-         (*list)[list_info->index - 1].offset_by = 1;
          menu_settings_list_current_add_range(list, list_info, 0, 4, 1, true, true);
 #endif
 

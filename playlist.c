@@ -1269,7 +1269,9 @@ bool playlist_push(playlist_t *playlist,
    if (string_is_empty(core_name))
    {
       static char base_path[255] = {0};
-      fill_pathname_base_noext(base_path, real_core_path, sizeof(base_path));
+      fill_pathname_base(base_path, real_core_path, sizeof(base_path));
+      path_remove_extension(base_path);
+
       core_name = base_path;
 
       if (string_is_empty(core_name))
@@ -2982,7 +2984,8 @@ static int playlist_qsort_func(const struct playlist_entry *a,
          goto end;
 
       if (!string_is_empty(a->path))
-         fill_short_pathname_representation(a_fallback_label, a->path, PATH_MAX_LENGTH * sizeof(char));
+         fill_pathname(a_fallback_label, path_basename(a->path),
+			 "", PATH_MAX_LENGTH * sizeof(char));
       /* If filename is also empty, use core name
        * instead -> this matches the behaviour of
        * menu_displaylist_parse_playlist() */
@@ -3005,7 +3008,8 @@ static int playlist_qsort_func(const struct playlist_entry *a,
          goto end;
 
       if (!string_is_empty(b->path))
-         fill_short_pathname_representation(b_fallback_label, b->path, PATH_MAX_LENGTH * sizeof(char));
+         fill_pathname(b_fallback_label, path_basename(b->path), "",
+               PATH_MAX_LENGTH * sizeof(char));
       else if (!string_is_empty(b->core_name))
          strlcpy(b_fallback_label, b->core_name, PATH_MAX_LENGTH * sizeof(char));
 

@@ -170,16 +170,6 @@ struct gfx_display_ctx_draw
    bool pipeline_active;
 };
 
-typedef struct gfx_display_ctx_rotate_draw
-{
-   math_matrix_4x4 *matrix;
-   float rotation;
-   float scale_x;
-   float scale_y;
-   float scale_z;
-   bool scale_enable;
-} gfx_display_ctx_rotate_draw_t;
-
 typedef struct gfx_display_ctx_coord_draw
 {
    const float *ptr;
@@ -300,15 +290,27 @@ void gfx_display_draw_texture_slice(
       math_matrix_4x4 *mymat);
 
 void gfx_display_rotate_z(gfx_display_t *p_disp,
-      gfx_display_ctx_rotate_draw_t *draw, void *data);
+      math_matrix_4x4 *matrix, float cosine, float sine, void *data);
 
 font_data_t *gfx_display_font_file(gfx_display_t *p_disp,
       char* fontpath, float font_size, bool is_threaded);
 
 bool gfx_display_reset_textures_list(
-      const char *texture_path, const char *iconpath,
-      uintptr_t *item, enum texture_filter_type filter_type,
-      unsigned *width, unsigned *height);
+      const char *texture_path,
+      const char *iconpath,
+      uintptr_t *item,
+      enum texture_filter_type filter_type,
+      unsigned *width,
+      unsigned *height);
+
+bool gfx_display_reset_textures_list_buffer(
+        uintptr_t *item,
+        enum texture_filter_type filter_type,
+        void* buffer,
+        unsigned buffer_len,
+        enum image_type_enum image_type,
+        unsigned *width,
+        unsigned *height);
 
 /* Returns the OSK key at a given position */
 int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
@@ -330,8 +332,6 @@ float gfx_display_get_dpi_scale(
 void gfx_display_deinit_white_texture(void);
 
 void gfx_display_init_white_texture(void);
-
-bool gfx_display_driver_exists(const char *s);
 
 bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       bool video_is_threaded);

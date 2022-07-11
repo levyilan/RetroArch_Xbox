@@ -43,16 +43,6 @@ gfx_display_t *disp_get_ptr(void)
    return &dispgfx_st;
 }
 
-static bool gfx_display_font_init_first(
-      void **font_handle, void *video_data,
-      const char *font_path, float font_size,
-      bool is_threaded, enum font_driver_render_api font_type)
-{
-   font_data_t **handle = (font_data_t**)font_handle;
-   return ((*handle = font_driver_init_first(video_data,
-         font_path, font_size, true, is_threaded, font_type)));
-}
-
 static const float *null_get_default_matrix(void)
 {
    static float dummy[16] = {0.0f};
@@ -472,25 +462,23 @@ font_data_t *gfx_display_font_file(
       gfx_display_t *p_disp,
       char* fontpath, float menu_font_size, bool is_threaded)
 {
-   font_data_t            *font_data = NULL;
-   float                  font_size  = menu_font_size;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
-   if (!dispctx)
-      return NULL;
-
-   /* Font size must be at least 2, or font_init_first()
-    * will generate a heap-buffer-overflow when using
-    * many font drivers */
-   if (font_size < 2.0f)
-      font_size = 2.0f;
-
-   if (!gfx_display_font_init_first((void**)&font_data,
-            video_driver_get_ptr(),
-            fontpath, font_size, is_threaded, dispctx->font_type))
-      return NULL;
-
-   return font_data;
+   if (dispctx)
+   {
+      font_data_t        *font_data  = NULL;
+      float               font_size  = menu_font_size;
+      /* Font size must be at least 2, or font_init_first()
+       * will generate a heap-buffer-overflow when using
+       * many font drivers */
+      if (font_size < 2.0f)
+         font_size = 2.0f;
+      if ((font_data = font_driver_init_first(video_driver_get_ptr(),
+                  fontpath, font_size, true, is_threaded,
+                  dispctx->font_type)))
+         return font_data;
+   }
+   return NULL;
 }
 
 /* Draw text on top of the screen */
@@ -957,47 +945,25 @@ void gfx_display_draw_texture_slice(
 }
 
 void gfx_display_rotate_z(gfx_display_t *p_disp,
-      gfx_display_ctx_rotate_draw_t *draw, void *data)
+      math_matrix_4x4 *matrix, float cosine, float sine, void *data)
 {
-   float cosine, sine, radians;
-   math_matrix_4x4 matrix_rotated     = {
-      {  0.0f,          0.0f,          0.0f,          0.0f ,
-         0.0f,          0.0f,          0.0f,          0.0f ,
-         0.0f,          0.0f,          1.0f,          0.0f ,
-         0.0f,          0.0f,          0.0f,          1.0f } 
-   };
-   math_matrix_4x4 *b                 = NULL;
    gfx_display_ctx_driver_t *dispctx  = p_disp->dispctx;
-
-   if (
-              dispctx->handles_transform
-         ||  !dispctx->get_default_mvp 
-         || !(b = (math_matrix_4x4*)dispctx->get_default_mvp(data))
-      )
-      return;
-
-   radians                            = draw->rotation;
-   cosine                             = cosf(radians);
-   sine                               = sinf(radians);
-   MAT_ELEM_4X4(matrix_rotated, 0, 0) = cosine;
-   MAT_ELEM_4X4(matrix_rotated, 0, 1) = -sine;
-   MAT_ELEM_4X4(matrix_rotated, 1, 0) = sine;
-   MAT_ELEM_4X4(matrix_rotated, 1, 1) = cosine;
-
-   matrix_4x4_multiply(*draw->matrix, matrix_rotated, *b);
-
-   if (draw->scale_enable)
+   math_matrix_4x4 *b                 = (dispctx->get_default_mvp) 
+      ? (math_matrix_4x4*)dispctx->get_default_mvp(data)
+      : NULL;
+   if (b)
    {
-      math_matrix_4x4 matrix_scaled     = {
-         { 0.0f,          0.0f,          0.0f,          0.0f ,
-           0.0f,          0.0f,          0.0f,          0.0f ,
-           0.0f,          0.0f,          0.0f,          0.0f ,
-           0.0f,          0.0f,          0.0f,          1.0f } 
+      static math_matrix_4x4 rot         = {
+         {  0.0f,          0.0f,          0.0f,          0.0f ,
+            0.0f,          0.0f,          0.0f,          0.0f ,
+            0.0f,          0.0f,          1.0f,          0.0f ,
+            0.0f,          0.0f,          0.0f,          1.0f } 
       };
-      MAT_ELEM_4X4(matrix_scaled, 0, 0) = draw->scale_x;
-      MAT_ELEM_4X4(matrix_scaled, 1, 1) = draw->scale_y;
-      MAT_ELEM_4X4(matrix_scaled, 2, 2) = draw->scale_z;
-      matrix_4x4_multiply(*draw->matrix, matrix_scaled, *draw->matrix);
+      MAT_ELEM_4X4(rot, 0, 0)            = cosine;
+      MAT_ELEM_4X4(rot, 0, 1)            = -sine;
+      MAT_ELEM_4X4(rot, 1, 0)            = sine;
+      MAT_ELEM_4X4(rot, 1, 1)            = cosine;
+      matrix_4x4_multiply(*matrix, rot, *b);
    }
 }
 
@@ -1054,7 +1020,7 @@ int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
    int ptr_width  = width / 11;
    int ptr_height = height / 10;
 
-   if (ptr_width >= ptr_height)
+   if (ptr_width > ptr_height)
       ptr_width = ptr_height;
 
    for (i = 0; i < 44; i++)
@@ -1127,20 +1093,11 @@ void gfx_display_draw_keyboard(
       0.00, 0.00, 0.00, 0.85,
       0.00, 0.00, 0.00, 0.85,
    };
-   math_matrix_4x4 mymat;
-   gfx_display_ctx_rotate_draw_t rotate_draw;
 
 #ifdef HAVE_MIST
    if(steam_has_osk_open())
       return;
 #endif
-
-   rotate_draw.matrix       = &mymat;
-   rotate_draw.rotation     = 0.0;
-   rotate_draw.scale_x      = 1.0;
-   rotate_draw.scale_y      = 1.0;
-   rotate_draw.scale_z      = 1;
-   rotate_draw.scale_enable = true;
 
    gfx_display_draw_quad(
          p_disp,
@@ -1159,10 +1116,8 @@ void gfx_display_draw_keyboard(
    ptr_width  = video_width  / 11;
    ptr_height = video_height / 10;
 
-   if (ptr_width >= ptr_height)
+   if (ptr_width > ptr_height)
       ptr_width = ptr_height;
-
-   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 
    for (i = 0; i < 44; i++)
    {
@@ -1204,6 +1159,35 @@ void gfx_display_draw_keyboard(
             1.0f,
             false, 0, false);
    }
+}
+
+/* NOTE: Reads image from memory buffer */
+bool gfx_display_reset_textures_list_buffer(
+        uintptr_t *item, enum texture_filter_type filter_type,
+        void* buffer, unsigned buffer_len, enum image_type_enum image_type,
+        unsigned *width, unsigned *height)
+{
+   struct texture_image ti;
+
+   ti.width                      = 0;
+   ti.height                     = 0;
+   ti.pixels                     = NULL;
+   ti.supports_rgba              = video_driver_supports_rgba();
+
+   if (!image_texture_load_buffer(&ti, image_type, buffer, buffer_len))
+      return false;
+
+   if (width)
+      *width = ti.width;
+
+   if (height)
+      *height = ti.height;
+
+   /* if the poke interface doesn't support texture load then return false */  
+   if (!video_driver_texture_load(&ti, filter_type, item))
+       return false;
+   image_texture_free(&ti);
+   return true;
 }
 
 /* NOTE: Reads image from file */
@@ -1291,18 +1275,6 @@ void gfx_display_init(void)
 
    p_disp->has_windowed          = video_driver_has_windowed();
    p_dispca->allocated           =  0;
-}
-
-bool gfx_display_driver_exists(const char *s)
-{
-   unsigned i;
-   for (i = 0; i < ARRAY_SIZE(gfx_display_ctx_drivers); i++)
-   {
-      if (string_is_equal(s, gfx_display_ctx_drivers[i]->ident))
-         return true;
-   }
-
-   return false;
 }
 
 bool gfx_display_init_first_driver(gfx_display_t *p_disp,

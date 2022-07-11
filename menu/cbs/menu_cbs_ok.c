@@ -415,6 +415,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_NETWORK_HOSTING_SETTINGS_LIST;
       case ACTION_OK_DL_NETPLAY_KICK_LIST:
          return MENU_ENUM_LABEL_DEFERRED_NETPLAY_KICK_LIST;
+      case ACTION_OK_DL_NETPLAY_BAN_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_NETPLAY_BAN_LIST;
       case ACTION_OK_DL_NETPLAY_LOBBY_FILTERS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_NETPLAY_LOBBY_FILTERS_LIST;
       case ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST:
@@ -1365,7 +1367,8 @@ int generic_action_ok_displaylist_push(const char *path,
                   settings->paths.path_content_database,
                   path, sizeof(tmp));
 
-            fill_pathname_base_noext(lpl_basename, path, sizeof(lpl_basename));
+            fill_pathname_base(lpl_basename, path, sizeof(lpl_basename));
+            path_remove_extension(lpl_basename);
             menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
 
             info.directory_ptr = idx;
@@ -1583,6 +1586,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_NETWORK_SETTINGS_LIST:
       case ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST:
       case ACTION_OK_DL_NETPLAY_KICK_LIST:
+      case ACTION_OK_DL_NETPLAY_BAN_LIST:
       case ACTION_OK_DL_NETPLAY_LOBBY_FILTERS_LIST:
       case ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST:
       case ACTION_OK_DL_BLUETOOTH_SETTINGS_LIST:
@@ -5437,8 +5441,9 @@ static int action_ok_add_to_favorites(const char *path,
 
       /* Label is empty - use file name instead */
       if (string_is_empty(content_label))
-         fill_short_pathname_representation(content_label,
-               content_path, sizeof(content_label));
+         fill_pathname(content_label,
+               path_basename(content_path), "",
+               sizeof(content_label));
 
       /* > core_path + core_name */
       if (system)
@@ -5575,7 +5580,9 @@ static int action_ok_add_to_favorites_playlist(const char *path,
          /* Label is empty - use file name instead */
          char fallback_content_label[PATH_MAX_LENGTH];
          fallback_content_label[0] = '\0';
-         fill_short_pathname_representation(fallback_content_label, entry->path, sizeof(fallback_content_label));
+         fill_pathname(fallback_content_label,
+               path_basename(entry->path), "",
+               sizeof(fallback_content_label));
          string_list_append(str_list, fallback_content_label, attr);
       }
 
@@ -5785,6 +5792,7 @@ DEFAULT_ACTION_OK_FUNC(action_ok_saving_list, ACTION_OK_DL_SAVING_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_network_list, ACTION_OK_DL_NETWORK_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_network_hosting_list, ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_netplay_kick_list, ACTION_OK_DL_NETPLAY_KICK_LIST)
+DEFAULT_ACTION_OK_FUNC(action_ok_netplay_ban_list, ACTION_OK_DL_NETPLAY_BAN_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_netplay_lobby_filters_list, ACTION_OK_DL_NETPLAY_LOBBY_FILTERS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_subsystem_list, ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_database_manager_list, ACTION_OK_DL_DATABASE_MANAGER_LIST)
@@ -6167,6 +6175,28 @@ static int action_ok_push_netplay_kick(const char *path, const char *label,
    else
       snprintf(msg, sizeof(msg),
          msg_hash_to_str(MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S), client.name);
+
+   runloop_msg_queue_push(msg, 1, 180, true, NULL,
+      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+static int action_ok_push_netplay_ban(const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   char msg[256];
+   netplay_client_info_t client;
+
+   client.id = (int)strtol(label, NULL, 10);
+   strlcpy(client.name, path, sizeof(client.name));
+
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_BAN_CLIENT, &client))
+      snprintf(msg, sizeof(msg),
+         msg_hash_to_str(MSG_NETPLAY_BANNED_CLIENT_S), client.name);
+   else
+      snprintf(msg, sizeof(msg),
+         msg_hash_to_str(MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S), client.name);
 
    runloop_msg_queue_push(msg, 1, 180, true, NULL,
       MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -8341,6 +8371,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #endif
          {MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS,            action_ok_network_hosting_list},
          {MENU_ENUM_LABEL_NETPLAY_KICK,                        action_ok_netplay_kick_list},
+         {MENU_ENUM_LABEL_NETPLAY_BAN,                         action_ok_netplay_ban_list},
          {MENU_ENUM_LABEL_NETPLAY_LOBBY_FILTERS,               action_ok_netplay_lobby_filters_list},
          {MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS,                  action_ok_subsystem_list},
          {MENU_ENUM_LABEL_NETWORK_SETTINGS,                    action_ok_network_list},
@@ -8840,6 +8871,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_NETPLAY_KICK:
 #ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_push_netplay_kick);
+#endif
+            break;
+         case MENU_NETPLAY_BAN:
+#ifdef HAVE_NETWORKING
+            BIND_ACTION_OK(cbs, action_ok_push_netplay_ban);
 #endif
             break;
          case FILE_TYPE_CURSOR:

@@ -986,7 +986,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   "출시 년도"
+   "출시 연도"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
@@ -2370,7 +2370,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   "폴 타입 동작"
+   "폴링 방식"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
@@ -3665,7 +3665,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
-   "시작 디렉토리에서 컨테르를 불러올 경우 최근 사용한 위치에서 파일 탐색기를 불러옵니다. 참고: RetroArch를 재시작하면 기본 위치로 초기화 됩니다."
+   "시작 디렉토리에서 컨텐츠를 불러올 경우 최근 사용한 위치에서 파일 탐색기를 시작합니다. 참고: RetroArch를 재시작하면 기본 위치로 초기화 됩니다."
    )
 
 /* Settings > Frame Throttle */
@@ -4820,11 +4820,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
-   "'탐색기' 표시"
+   "'탐색' 표시"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
-   "컨텐츠 탐색기 옵션을 표시합니다. (Ozone/XMB 사용시 재시작 필요)"
+   "컨텐츠 탐색 메뉴를 표시합니다. (Ozone/XMB 사용시 재시작 필요)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
@@ -5350,7 +5350,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
-   "지정한 값보다 작은 크기의 미리보기 이미지를 자동으로 확대합니다. 이미지 품질을 개선해 줍니다. 약간의 성능저하가 있을 수 있습니다."
+   "지정된 값보다 작은 크기의 미리보기 이미지를 자동으로 확대합니다. 이미지 품질이 개선됩니다. 약간의 성능 저하가 있을 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
@@ -5573,6 +5573,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
    "사용자 정의 릴레이 서버의 주소를 입력합니다. 포맷: 주소 또는 주소|포트."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
+   "북아메리카 (동부, 미국)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2,
+   "유럽 서부"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3,
+   "남아메리카 (남동부, 브라질)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
+   "동남아시아"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
+   "사용자"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
@@ -6130,12 +6150,8 @@ MSG_HASH(
    "코어가 카메라에 접근할 수 있게 합니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
-   "Discord 활성화"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Discord 앱에서 실행 중인 컨텐츠에 대한 더 많은 정보를 표시하게 합니다.\n클라이언트 버전이 아닌 브라우저 버전 Discord에는 적용되지 않습니다."
+   "Discord 앱에 실행 중인 컨텐츠에 대한 정보를 표시합니다.\n네이티브 데스크탑 앱에서만 사용할 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -6559,6 +6575,10 @@ MSG_HASH(
    "연결 가능한 방만 표시"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
+   "코어가 설치되어있는 방만 표시"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
    "비밀번호 설정된 방"
    )
@@ -6600,6 +6620,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_KICK,
    "호스트 중인 방에서 이 클라이언트를 강제로 퇴장시킵니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_BAN,
+   "클라이언트 차단"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_BAN,
+   "호스트 중인 방에서 이 클라이언트를 차단합니다."
    )
 
 /* Import Content */
@@ -9301,11 +9329,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
-   "사이드바 중첩"
+   "사이드바 접기"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
-   "왼쪽 사이드바를 항상 중첩되게 합니다."
+   "왼쪽 사이드바를 항상 작게 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
@@ -11048,12 +11076,24 @@ MSG_HASH(
    "클라이언트 강제 퇴장 실패함: \"%s\""
    )
 MSG_HASH(
+   MSG_NETPLAY_BANNED_CLIENT_S,
+   "클라이언트 차단됨: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
+   "클라이언트 차단 실패함: \"%s\""
+   )
+MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
    "실행 중"
    )
 MSG_HASH(
    MSG_NETPLAY_STATUS_SPECTATING,
    "관전 중"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CLIENT_DEVICES,
+   "장치"
    )
 MSG_HASH(
    MSG_NETPLAY_CHAT_SUPPORTED,
@@ -12311,6 +12351,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_HOST_FULL,
    "넷플레이 호스트가 가득 참"
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "이 호스트에서 차단되었습니다"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,

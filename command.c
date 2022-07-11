@@ -1084,7 +1084,6 @@ bool command_event_save_auto_state(
       const enum rarch_core_type current_core_type)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
-   bool ret                    = false;
    char savestate_name_auto[PATH_MAX_LENGTH];
 
    if (runloop_st->entry_state_slot)
@@ -1095,10 +1094,8 @@ bool command_event_save_auto_state(
       return false;
    if (!core_info_current_supports_savestate())
       return false;
-
    if (string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))))
       return false;
-
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
       return false;
@@ -1106,15 +1103,21 @@ bool command_event_save_auto_state(
 
    savestate_name_auto[0]      = '\0';
 
-   fill_pathname_noext(savestate_name_auto,
+   strlcpy(savestate_name_auto,
          runloop_st->name.savestate,
-         ".auto", sizeof(savestate_name_auto));
+         sizeof(savestate_name_auto));
+   strlcat(savestate_name_auto,
+         ".auto",
+         sizeof(savestate_name_auto));
 
-   ret = content_save_state((const char*)savestate_name_auto, true, true);
-   RARCH_LOG("%s \"%s\" %s.\n",
-         msg_hash_to_str(MSG_AUTO_SAVE_STATE_TO),
-         savestate_name_auto, ret ?
-         "succeeded" : "failed");
+   if (content_save_state((const char*)savestate_name_auto, true, true))
+	   RARCH_LOG("%s \"%s\" %s.\n",
+			   msg_hash_to_str(MSG_AUTO_SAVE_STATE_TO),
+			   savestate_name_auto, "succeeded");
+   else
+	   RARCH_LOG("%s \"%s\" %s.\n",
+			   msg_hash_to_str(MSG_AUTO_SAVE_STATE_TO),
+			   savestate_name_auto, "failed");
 
    return true;
 }
@@ -1212,21 +1215,29 @@ void command_event_load_auto_state(void)
 
    savestate_name_auto[0] = '\0';
 
-   fill_pathname_noext(savestate_name_auto, runloop_st->name.savestate,
-         ".auto", sizeof(savestate_name_auto));
+   strlcpy(savestate_name_auto,
+         runloop_st->name.savestate,
+         sizeof(savestate_name_auto));
+   strlcat(savestate_name_auto,
+         ".auto",
+         sizeof(savestate_name_auto));
 
    if (!path_is_valid(savestate_name_auto))
       return;
 
-   ret = content_load_state(savestate_name_auto, false, true);
-
    RARCH_LOG("[State]: %s \"%s\".\n",
          msg_hash_to_str(MSG_FOUND_AUTO_SAVESTATE_IN),
          savestate_name_auto);
-   RARCH_LOG("[State]: %s \"%s\" %s.\n",
-         msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
-         savestate_name_auto, ret ? "succeeded" : "failed"
-         );
+
+   if ((content_load_state(savestate_name_auto, false, true)))
+      RARCH_LOG("[State]: %s \"%s\" %s.\n",
+            msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
+            savestate_name_auto, "succeeded");
+   else
+      RARCH_LOG("[State]: %s \"%s\" %s.\n",
+            msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
+            savestate_name_auto, "failed");
+
 }
 
 void command_event_set_savestate_auto_index(settings_t *settings)
@@ -1446,10 +1457,8 @@ bool command_event_save_core_config(
       char tmp[PATH_MAX_LENGTH + 8];
       RARCH_LOG("[Config]: %s\n", msg_hash_to_str(MSG_USING_CORE_NAME_FOR_NEW_CONFIG));
 
-      fill_pathname_base_noext(
-            config_name,
-            core_path,
-            sizeof(config_name));
+      fill_pathname_base(config_name, core_path, sizeof(config_name));
+      path_remove_extension(config_name);
       fill_pathname_join(config_path, config_dir, config_name,
             sizeof(config_path));
 

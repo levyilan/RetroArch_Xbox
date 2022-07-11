@@ -39,14 +39,6 @@
 #include "../tasks/task_content.h"
 #include "../tasks/tasks_internal.h"
 
-#ifdef HAVE_THREADS
-#define SLOCK_LOCK(x) slock_lock(x)
-#define SLOCK_UNLOCK(x) slock_unlock(x)
-#else
-#define SLOCK_LOCK(x)
-#define SLOCK_UNLOCK(x)
-#endif
-
 #define BASE_FONT_SIZE 32.0f
 
 #define MSG_QUEUE_FONT_SIZE (BASE_FONT_SIZE * 0.69f)
@@ -457,7 +449,9 @@ static void gfx_widgets_msg_queue_move(dispgfx_widget_t *p_dispwidget)
    /* there should always be one and only one unfolded message */
    disp_widget_msg_t *unfold        = NULL; 
 
-   SLOCK_LOCK(p_dispwidget->current_msgs_lock);
+#ifdef HAVE_THREADS
+   slock_lock(p_dispwidget->current_msgs_lock);
+#endif
 
    for (i = (int)(p_dispwidget->current_msgs_size - 1); i >= 0; i--)
    {
@@ -490,7 +484,9 @@ static void gfx_widgets_msg_queue_move(dispgfx_widget_t *p_dispwidget)
       }
    }
 
-   SLOCK_UNLOCK(p_dispwidget->current_msgs_lock);
+#ifdef HAVE_THREADS
+   slock_unlock(p_dispwidget->current_msgs_lock);
+#endif
 }
 
 static void gfx_widgets_msg_queue_free(
@@ -539,10 +535,11 @@ static void gfx_widgets_msg_queue_kill_end(void *userdata)
    disp_widget_msg_t* msg;
    dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
 
-   SLOCK_LOCK(p_dispwidget->current_msgs_lock);
+#ifdef HAVE_THREADS
+   slock_lock(p_dispwidget->current_msgs_lock);
+#endif
 
-   msg = p_dispwidget->current_msgs[p_dispwidget->msg_queue_kill];
-   if (msg)
+   if ((msg = p_dispwidget->current_msgs[p_dispwidget->msg_queue_kill]))
    {
       /* Remove it from the list */
       for (i = p_dispwidget->msg_queue_kill; i < p_dispwidget->current_msgs_size - 1; i++)
@@ -558,7 +555,9 @@ static void gfx_widgets_msg_queue_kill_end(void *userdata)
       free(msg);
    }
 
-   SLOCK_UNLOCK(p_dispwidget->current_msgs_lock);
+#ifdef HAVE_THREADS
+   slock_unlock(p_dispwidget->current_msgs_lock);
+#endif
 }
 
 static void gfx_widgets_msg_queue_kill(
@@ -609,10 +608,11 @@ void gfx_widgets_draw_icon(
       unsigned icon_height,
       uintptr_t texture,
       float x, float y,
-      float rotation, float scale_factor,
+      float radians,
+      float cosine,
+      float sine,
       float *color)
 {
-   gfx_display_ctx_rotate_draw_t rotate_draw;
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    math_matrix_4x4 mymat;
@@ -622,14 +622,8 @@ void gfx_widgets_draw_icon(
    if (!texture)
       return;
 
-   rotate_draw.matrix       = &mymat;
-   rotate_draw.rotation     = rotation;
-   rotate_draw.scale_x      = scale_factor;
-   rotate_draw.scale_y      = scale_factor;
-   rotate_draw.scale_z      = 1;
-   rotate_draw.scale_enable = true;
-
-   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+   if (!p_disp->dispctx->handles_transform)
+      gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -641,8 +635,8 @@ void gfx_widgets_draw_icon(
    draw.y               = video_height - y - icon_height;
    draw.width           = icon_width;
    draw.height          = icon_height;
-   draw.scale_factor    = scale_factor;
-   draw.rotation        = rotation;
+   draw.scale_factor    = 1.0f;
+   draw.rotation        = radians;
    draw.coords          = &coords;
    draw.matrix_data     = &mymat;
    draw.texture         = texture;
@@ -993,7 +987,9 @@ void gfx_widgets_iterate(
    {
       disp_widget_msg_t *msg_widget = NULL;
 
-      SLOCK_LOCK(p_dispwidget->current_msgs_lock);
+#ifdef HAVE_THREADS
+      slock_lock(p_dispwidget->current_msgs_lock);
+#endif
 
       if (p_dispwidget->current_msgs_size < ARRAY_SIZE(p_dispwidget->current_msgs))
       {
@@ -1020,7 +1016,9 @@ void gfx_widgets_iterate(
          }
       }
 
-      SLOCK_UNLOCK(p_dispwidget->current_msgs_lock);
+#ifdef HAVE_THREADS
+      slock_unlock(p_dispwidget->current_msgs_lock);
+#endif
 
       if (msg_widget)
       {
@@ -1106,9 +1104,13 @@ static int gfx_widgets_draw_indicator(
             p_disp,
             video_width,
             video_height,
-            width, height,
-            icon, top_right_x_advance - width, y,
-            0, 1,
+            width,
+            height,
+            icon,
+            top_right_x_advance - width, y,
+            0.0f, /* rad */
+            1.0f, /* cos(rad)   = cos(0)  = 1.0f */
+            0.0f, /* sine(rad)  = sine(0) = 0.0f */
             p_dispwidget->pure_white
             );
       if (dispctx && dispctx->blend_end)
@@ -1258,22 +1260,34 @@ static void gfx_widgets_draw_task_msg(
    gfx_display_set_alpha(p_dispwidget->pure_white, msg->alpha);
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(userdata);
-   gfx_widgets_draw_icon(
-         userdata,
-         p_disp,
-         video_width,
-         video_height,
-         p_dispwidget->msg_queue_height / 2,
-         p_dispwidget->msg_queue_height / 2,
-         p_dispwidget->gfx_widgets_icons_textures[
-         msg->task_finished 
-         ? MENU_WIDGETS_ICON_CHECK 
-         : MENU_WIDGETS_ICON_HOURGLASS],
-         p_dispwidget->msg_queue_task_hourglass_x,
-         video_height - msg->offset_y,
-         msg->task_finished ? 0 : msg->hourglass_rotation,
-         1,
-         p_dispwidget->pure_white);
+   {
+      float radians = 0.0f; /* rad                        */
+      float cosine  = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
+      float sine    = 0.0f; /* sine(rad) = sine(0) = 0.0f */
+      if (!msg->task_finished)
+      {
+         radians    = msg->hourglass_rotation;
+         cosine     = cosf(radians);
+         sine       = sinf(radians);
+      }
+      gfx_widgets_draw_icon(
+            userdata,
+            p_disp,
+            video_width,
+            video_height,
+            p_dispwidget->msg_queue_height / 2,
+            p_dispwidget->msg_queue_height / 2,
+            p_dispwidget->gfx_widgets_icons_textures[
+            msg->task_finished 
+            ? MENU_WIDGETS_ICON_CHECK 
+            : MENU_WIDGETS_ICON_HOURGLASS],
+            p_dispwidget->msg_queue_task_hourglass_x,
+            video_height - msg->offset_y,
+            radians,
+            cosine,
+            sine,
+            p_dispwidget->pure_white);
+   }
    if (dispctx && dispctx->blend_end)
       dispctx->blend_end(userdata);
 
@@ -1455,8 +1469,9 @@ static void gfx_widgets_draw_regular_msg(
             p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_INFO],
             p_dispwidget->msg_queue_spacing,
             video_height - msg->offset_y  - p_dispwidget->msg_queue_icon_offset_y,
-            0,
-            1,
+            0.0f, /* rad                         */
+            1.0f, /* cos(rad)   = cos(0)  = 1.0f */
+            0.0f, /* sine(rad)  = sine(0) = 0.0f */
             msg_queue_info);
 
       if (dispctx && dispctx->blend_end)
@@ -1537,8 +1552,9 @@ void gfx_widgets_frame(void *data)
                p_dispwidget->ai_service_overlay_texture,
                0,
                0,
-               0,
-               1,
+               0.0f, /* rad                         */
+               1.0f, /* cos(rad)   = cos(0)  = 1.0f */
+               0.0f, /* sine(rad)  = sine(0) = 0.0f */
                p_dispwidget->pure_white
                );
          if (dispctx->blend_end)
@@ -1629,7 +1645,8 @@ void gfx_widgets_frame(void *data)
          - p_dispwidget->simple_widget_padding - text_width;
       /* Ensure that left hand side of text does
        * not bleed off the edge of the screen */
-      status_text_x         = (status_text_x < 0) ? 0 : status_text_x;
+      if (status_text_x < 0)
+         status_text_x      = 0;
 
       gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
 
@@ -1731,7 +1748,9 @@ void gfx_widgets_frame(void *data)
    /* Draw all messages */
    if (p_dispwidget->current_msgs_size)
    {
-      SLOCK_LOCK(p_dispwidget->current_msgs_lock);
+#ifdef HAVE_THREADS
+      slock_lock(p_dispwidget->current_msgs_lock);
+#endif
 
       for (i = 0; i < p_dispwidget->current_msgs_size; i++)
       {
@@ -1756,7 +1775,9 @@ void gfx_widgets_frame(void *data)
                video_width, video_height);
       }
 
-      SLOCK_UNLOCK(p_dispwidget->current_msgs_lock);
+#ifdef HAVE_THREADS
+      slock_unlock(p_dispwidget->current_msgs_lock);
+#endif
    }
 
    /* Ensure all text is flushed */
@@ -1818,7 +1839,9 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
    fifo_deinitialize(&p_dispwidget->msg_queue);
 
    /* Purge everything from the list */
-   SLOCK_LOCK(p_dispwidget->current_msgs_lock);
+#ifdef HAVE_THREADS
+   slock_lock(p_dispwidget->current_msgs_lock);
+#endif
 
    p_dispwidget->current_msgs_size = 0;
    for (i = 0; i < ARRAY_SIZE(p_dispwidget->current_msgs); i++)
@@ -1839,9 +1862,9 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
 
       gfx_widgets_msg_queue_free(p_dispwidget, msg);
    }
-   SLOCK_UNLOCK(p_dispwidget->current_msgs_lock);
-
 #ifdef HAVE_THREADS
+   slock_unlock(p_dispwidget->current_msgs_lock);
+
    slock_free(p_dispwidget->current_msgs_lock);
    p_dispwidget->current_msgs_lock = NULL;
 #endif
@@ -2109,35 +2132,6 @@ void gfx_widgets_deinit(bool widgets_persisting)
 }
 
 #ifdef HAVE_TRANSLATE
-/* NOTE: Reads image from memory buffer */
-static bool gfx_widgets_reset_textures_list_buffer(
-        uintptr_t *item, enum texture_filter_type filter_type,
-        void* buffer, unsigned buffer_len, enum image_type_enum image_type,
-        unsigned *width, unsigned *height)
-{
-   struct texture_image ti;
-
-   ti.width                      = 0;
-   ti.height                     = 0;
-   ti.pixels                     = NULL;
-   ti.supports_rgba              = video_driver_supports_rgba();
-
-   if (!image_texture_load_buffer(&ti, image_type, buffer, buffer_len))
-      return false;
-
-   if (width)
-      *width = ti.width;
-
-   if (height)
-      *height = ti.height;
-
-   /* if the poke interface doesn't support texture load then return false */  
-   if (!video_driver_texture_load(&ti, filter_type, item))
-       return false;
-   image_texture_free(&ti);
-   return true;
-}
-
 bool gfx_widgets_ai_service_overlay_load(
       char* buffer, unsigned buffer_len,
       enum image_type_enum image_type)
@@ -2145,7 +2139,7 @@ bool gfx_widgets_ai_service_overlay_load(
    dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
    if (p_dispwidget->ai_service_overlay_state == 0)
    {
-      if (!gfx_widgets_reset_textures_list_buffer(
+      if (!gfx_display_reset_textures_list_buffer(
                &p_dispwidget->ai_service_overlay_texture, 
                TEXTURE_FILTER_MIPMAP_LINEAR, 
                (void *) buffer, buffer_len, image_type,

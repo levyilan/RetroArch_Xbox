@@ -638,7 +638,7 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
 
 /* Time format strings with AM-PM designation require special
  * handling due to platform dependence */
-static void strftime_am_pm(char* ptr, size_t maxsize, const char* format,
+static void strftime_am_pm(char *s, size_t len, const char* format,
       const struct tm* timeptr)
 {
    char *local = NULL;
@@ -647,15 +647,14 @@ static void strftime_am_pm(char* ptr, size_t maxsize, const char* format,
     * > Required for localised AM/PM strings */
    setlocale(LC_TIME, "");
 
-   strftime(ptr, maxsize, format, timeptr);
+   strftime(s, len, format, timeptr);
 #if !(defined(__linux__) && !defined(ANDROID))
-   local = local_to_utf8_string_alloc(ptr);
-
-   if (!string_is_empty(local))
-      strlcpy(ptr, local, maxsize);
-
+   local = local_to_utf8_string_alloc(s);
    if (local)
    {
+	   if (!string_is_empty(local))
+		   strlcpy(s, local, len);
+
       free(local);
       local = NULL;
    }
@@ -3464,18 +3463,18 @@ bool rarch_menu_init(
 
 #ifdef HAVE_COMPRESSION
    if (      settings->bools.bundle_assets_extract_enable
-         && !string_is_empty(settings->arrays.bundle_assets_src)
-         && !string_is_empty(settings->arrays.bundle_assets_dst)
+         && !string_is_empty(settings->paths.bundle_assets_src)
+         && !string_is_empty(settings->paths.bundle_assets_dst)
          && (settings->uints.bundle_assets_extract_version_current
             != settings->uints.bundle_assets_extract_last_version)
       )
    {
       p_dialog->current_type         = MENU_DIALOG_HELP_EXTRACT;
       task_push_decompress(
-            settings->arrays.bundle_assets_src,
-            settings->arrays.bundle_assets_dst,
+            settings->paths.bundle_assets_src,
+            settings->paths.bundle_assets_dst,
             NULL,
-            settings->arrays.bundle_assets_dst_subdir,
+            settings->paths.bundle_assets_dst_subdir,
             NULL,
             bundle_decompressed,
             NULL,

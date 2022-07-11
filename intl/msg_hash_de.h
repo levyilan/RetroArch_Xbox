@@ -5443,6 +5443,26 @@ MSG_HASH(
    "Hier die Adresse eines eigenen Relayservers eingeben. Format: Adresse oder Adresse|Port."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
+   "Nordamerika (Ostküste, USA)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2,
+   "Westeuropa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3,
+   "Südamerika (Südosten, Brasilien)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
+   "Südostasien"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
+   "Benutzerdefiniert"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
    "Server-Adresse"
    )
@@ -6379,6 +6399,10 @@ MSG_HASH(
    "Nur verbindbare Räume"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
+   "Nur installierte Cores"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
    "Kennwortgeschützte Räume"
    )
@@ -6420,6 +6444,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_KICK,
    "Einen Client aus dem aktuell gehosteten Raum schmeißen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_BAN,
+   "Client sperren"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_BAN,
+   "Einen Client aus dem aktuell gehosteten Raum verbannen."
    )
 
 /* Import Content */
@@ -10640,12 +10672,24 @@ MSG_HASH(
    "Client konnte nicht rausgeschmissen werden: „%s“"
    )
 MSG_HASH(
+   MSG_NETPLAY_BANNED_CLIENT_S,
+   "Client gesperrt: „%s“"
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
+   "Fehler beim Sperren des Clients: „%s“"
+   )
+MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
    "Im Spiel"
    )
 MSG_HASH(
    MSG_NETPLAY_STATUS_SPECTATING,
    "Zuschauer"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CLIENT_DEVICES,
+   "Geräte"
    )
 MSG_HASH(
    MSG_NETPLAY_CHAT_SUPPORTED,
@@ -11899,6 +11943,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_HOST_FULL,
    "Netzwerkspiel voll"
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "Du wurdest aus diesem Host ausgeschlossen"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
