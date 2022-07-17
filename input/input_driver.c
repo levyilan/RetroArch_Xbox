@@ -2950,7 +2950,7 @@ void input_config_set_device_config_path(unsigned port, const char *path)
       if (fill_pathname_parent_dir_name(parent_dir_name,
                path, sizeof(parent_dir_name)))
          fill_pathname_join(input_st->input_device_info[port].config_path,
-               parent_dir_name, path_basename(path),
+               parent_dir_name, path_basename_nocompression(path),
                sizeof(input_st->input_device_info[port].config_path));
    }
 }
@@ -3036,8 +3036,8 @@ const char *input_config_get_mouse_display_name(unsigned port)
 
 void input_config_set_mouse_display_name(unsigned port, const char *name)
 {
+   char name_ascii[NAME_MAX_LENGTH];
    input_driver_state_t *input_st = &input_driver_st;
-   char name_ascii[256];
 
    name_ascii[0] = '\0';
 
@@ -3081,7 +3081,7 @@ void config_read_keybinds_conf(void *data)
 
       for (j = 0; input_config_bind_map_get_valid(j); j++)
       {
-         char str[256];
+         char str[NAME_MAX_LENGTH];
          const struct input_bind_map *keybind =
             (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(j);
          struct retro_keybind *bind = &input_config_binds[i][j];
@@ -4479,7 +4479,6 @@ static bool bsv_movie_init_playback(
       bsv_movie_t *handle, const char *path)
 {
    uint32_t state_size       = 0;
-   uint32_t content_crc      = 0;
    uint32_t header[4]        = {0};
    intfstream_t *file        = intfstream_open_file(path,
          RETRO_VFS_FILE_ACCESS_READ,
@@ -4503,12 +4502,6 @@ static bool bsv_movie_init_playback(
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE));
       return false;
    }
-
-   content_crc               = content_get_crc();
-
-   if (content_crc != 0)
-      if (swap_if_big32(header[CRC_INDEX]) != content_crc)
-         RARCH_WARN("%s.\n", msg_hash_to_str(MSG_CRC32_CHECKSUM_MISMATCH));
 
    state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
 

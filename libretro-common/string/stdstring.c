@@ -528,31 +528,25 @@ unsigned string_hex_to_unsigned(const char *str)
 /**
  * Get the total number of occurrences of a character in the given string.
  */
-int string_count_occurrences_single_character(char *str, char t)
+int string_count_occurrences_single_character(const char *str, char c)
 {
-   int ctr = 0;
-   int i;
+   int count = 0;
 
-   for (i = 0; str[i] != '\0'; ++i)
-   {
-      if (t == str[i])
-         ++ctr;
-   }
+   for (; *str; str++)
+      if (*str == c)
+         count++;
 
-   return ctr;
+   return count;
 }
 
 /**
  * Replaces all spaces with the given character.
  */
-void string_replace_whitespace_with_single_character(char *str, char t)
+void string_replace_whitespace_with_single_character(char *str, char c)
 {
-   while (*str)
-   {
-      if (isspace(*str))
-         *str = t;
-      str++;
-   }
+   for (; *str; str++)
+      if (ISSPACE(*str))
+         *str = c;
 }
 
 /**
@@ -560,79 +554,63 @@ void string_replace_whitespace_with_single_character(char *str, char t)
  */
 void string_replace_multi_space_with_single_space(char *str)
 {
-   char *dest = str;
+   char *str_trimmed  = str;
+   bool prev_is_space = false;
+   bool curr_is_space = false;
 
-   while (*str != '\0')
+   for (; *str; str++)
    {
-      while (*str == ' ' && *(str + 1) == ' ')
-         str++;
-
-      *dest++ = *str++;
+      curr_is_space  = ISSPACE(*str);
+      if (prev_is_space && curr_is_space)
+         continue;
+      *str_trimmed++ = *str;
+      prev_is_space  = curr_is_space;
    }
-
-   *dest = '\0';
+   *str_trimmed = '\0';
 }
 
 /**
  * Remove all spaces from the given string.
  */
-void string_remove_all_whitespace(char* str_trimmed, const char* str_untrimmed)
+void string_remove_all_whitespace(char *str_trimmed, const char *str)
 {
-   while (*str_untrimmed != '\0')
-   {
-      if(!isspace(*str_untrimmed))
-      {
-         *str_trimmed = *str_untrimmed;
-         str_trimmed++;
-      }
-      str_untrimmed++;
-   }
+   for (; *str; str++)
+      if (!ISSPACE(*str))
+         *str_trimmed++ = *str;
    *str_trimmed = '\0';
 }
 
 /**
  * Retrieve the last occurance of the given character in a string.
  */
-int string_index_last_occurance(char *str, char t)
+int string_index_last_occurance(const char *str, char c)
 {
-   const char *ret = strrchr(str, t);
-   if (ret)
-      return ret-str;
-   return -1;
+   const char *pos = strrchr(str, c);
+
+   return pos ? (pos - str) : -1;
 }
 
 /**
  * Find the position of a substring in a string.
  */
-int string_find_index_substring_string(const char* str1, const char* str2)
+int string_find_index_substring_string(const char *str, const char *substr)
 {
-   if (str1[0] != '\0')
+   if (!string_is_empty(str))
    {
-      const char *pfound = strstr(str1, str2);
-      if (pfound)
-         return (pfound - str1);
+      const char *pos = strstr(str, substr);
+
+      if (pos)
+         return pos - str;
    }
 
    return -1;
 }
 
 /* Strips non-ASCII characters from a string. */
-void string_copy_only_ascii(char *str_stripped, const char* str)
+void string_copy_only_ascii(char *str_stripped, const char *str)
 {
-   if (!string_is_empty(str))
-   {
-      unsigned i = 0;
-      unsigned j = 0;
-
-      for (i = 0; i < strlen(str); i++)
-      {
-         if (str[i] > 0x1F && str[i] < 0x80)
-         {
-            str_stripped[j] = str[i];
-            j++;
-         }
-      }
-
-      str_stripped[j] = '\0';
-   }
+   for (; *str; str++)
+      if (*str > 0x1F && *str < 0x7F)
+         *str_stripped++ = *str;
+   *str_stripped = '\0';
 }
