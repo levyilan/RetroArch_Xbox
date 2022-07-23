@@ -2874,10 +2874,12 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
    config_directory[0]         = '\0';
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
-      fill_pathname_basedir(
-            config_directory,
+   {
+      strlcpy(config_directory,
             path_get(RARCH_PATH_CONFIG),
             sizeof(config_directory));
+      path_basedir(config_directory);
+   }
 
    preset_dirs[0] = dir_video_shader;
    preset_dirs[1] = dir_menu_config;
@@ -3654,8 +3656,6 @@ bool menu_entries_search_push(const char *search_term)
    menu_search_terms_t *search = menu_entries_search_get_terms_internal();
    char search_term_clipped[MENU_SEARCH_FILTER_MAX_LENGTH];
 
-   search_term_clipped[0] = '\0';
-
    /* Sanity check + verify whether we have reached
     * the maximum number of allowed search terms */
    if (!search ||
@@ -3751,66 +3751,31 @@ bool menu_shader_manager_save_preset_internal(
 {
    char fullname[PATH_MAX_LENGTH];
    char buffer[PATH_MAX_LENGTH];
+   const char *preset_ext         = NULL;
    bool ret                       = false;
    enum rarch_shader_type type    = RARCH_SHADER_NONE;
    char *preset_path              = NULL;
    size_t i                       = 0;
-
-   fullname[0] = buffer[0]        = '\0';
-
    if (!shader || !shader->passes)
       return false;
-
-   type = menu_shader_manager_get_type(shader);
-
-   if (type == RARCH_SHADER_NONE)
+   if ((type = menu_shader_manager_get_type(shader)) == RARCH_SHADER_NONE)
       return false;
 
+   buffer[0]  = '\0';
+   preset_ext = video_shader_get_preset_extension(type);
+
    if (!string_is_empty(basename))
-   {
-      /* We are comparing against a fixed list of file
-       * extensions, the longest (slangp) being 6 characters
-       * in length. We therefore only need to extract the first
-       * 7 characters from the extension of the input path
-       * to correctly validate a match */
-      char ext_lower[8];
-      const char *ext = NULL;
-
-      ext_lower[0]    = '\0';
-
       strlcpy(fullname, basename, sizeof(fullname));
-
-      /* Get file extension */
-      ext = strrchr(basename, '.');
-
-      /* Copy and convert to lower case */
-      if (ext && (*(++ext) != '\0'))
-      {
-         strlcpy(ext_lower, ext, sizeof(ext_lower));
-         string_to_lower(ext_lower);
-      }
-
-      /* Append extension automatically as appropriate. */
-      if (     !string_is_equal(ext_lower, "cgp")
-            && !string_is_equal(ext_lower, "glslp")
-            && !string_is_equal(ext_lower, "slangp"))
-      {
-         const char *preset_ext = video_shader_get_preset_extension(type);
-         strlcat(fullname, preset_ext, sizeof(fullname));
-      }
-   }
    else
-      snprintf(fullname, sizeof(fullname), "retroarch%s",
-            video_shader_get_preset_extension(type));
+      strlcpy(fullname, "retroarch", sizeof(fullname));
+   strlcat(fullname, preset_ext, sizeof(fullname));
 
    if (path_is_absolute(fullname))
    {
       preset_path = fullname;
-      ret         = video_shader_write_preset(preset_path,
+      if ((ret    = video_shader_write_preset(preset_path,
             dir_video_shader,
-            shader, save_reference);
-
-      if (ret)
+            shader, save_reference)))
          RARCH_LOG("[Shaders]: Saved shader preset to \"%s\".\n", preset_path);
       else
          RARCH_ERR("[Shaders]: Failed writing shader preset to \"%s\".\n", preset_path);
@@ -3832,9 +3797,7 @@ bool menu_shader_manager_save_preset_internal(
 
          if (!path_is_directory(basedir))
          {
-            ret = path_mkdir(basedir);
-
-            if (!ret)
+            if (!(ret = path_mkdir(basedir)))
             {
                RARCH_WARN("[Shaders]: Failed to create preset directory \"%s\".\n", basedir);
                continue;
@@ -3843,11 +3806,9 @@ bool menu_shader_manager_save_preset_internal(
 
          preset_path = buffer;
 
-         ret = video_shader_write_preset(preset_path,
+         if ((ret = video_shader_write_preset(preset_path,
                dir_video_shader,
-               shader, save_reference);
-
-         if (ret)
+               shader, save_reference)))
          {
             RARCH_LOG("[Shaders]: Saved shader preset to \"%s\".\n", preset_path);
             break;
@@ -3900,10 +3861,12 @@ bool menu_shader_manager_operate_auto_preset(
       return false;
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
-      fill_pathname_basedir(
-            config_directory,
+   {
+      strlcpy(config_directory,
             path_get(RARCH_PATH_CONFIG),
             sizeof(config_directory));
+      path_basedir(config_directory);
+   }
 
    /* We are only including this directory for compatibility purposes with
     * versions 1.8.7 and older. */
@@ -4064,10 +4027,8 @@ void menu_driver_set_last_shader_path_int(
       return;
 
    /* Get shader type */
-   *type = video_shader_parse_type(shader_path);
-
    /* If type is invalid, do nothing */
-   if (*type == RARCH_SHADER_NONE)
+   if ((*type = video_shader_parse_type(shader_path)) == RARCH_SHADER_NONE)
       return;
 
    /* Cache parent directory */
@@ -4208,13 +4169,9 @@ void menu_driver_set_pending_selection(const char *pending_selection)
 
    /* Reset existing cache */
    selection[0] = '\0';
-
-   /* If path is empty, do nothing */
-   if (string_is_empty(pending_selection))
-      return;
-
-   strlcpy(selection, pending_selection,
-         sizeof(menu_st->pending_selection));
+   if (!string_is_empty(pending_selection))
+      strlcpy(selection, pending_selection,
+            sizeof(menu_st->pending_selection));
 }
 
 void menu_input_search_cb(void *userdata, const char *str)
@@ -4329,17 +4286,13 @@ void menu_driver_set_last_start_content(const char *start_content_path)
          start_content_path, sizeof(menu->last_start_content.directory));
 
    /* Cache file name */
-   archive_delim      = path_get_archive_delim(start_content_path);
-   if (archive_delim)
+   if ((archive_delim = path_get_archive_delim(start_content_path)))
    {
       /* If path references a file inside an
        * archive, must extract the string segment
        * before the archive delimiter (i.e. path of
        * 'parent' archive file) */
-      size_t len;
-
-      archive_path[0] = '\0';
-      len             = (size_t)(1 + archive_delim - start_content_path);
+      size_t len      = (size_t)(1 + archive_delim - start_content_path);
       len             = (len < PATH_MAX_LENGTH) ? len : PATH_MAX_LENGTH;
 
       strlcpy(archive_path, start_content_path, len * sizeof(char));
@@ -4414,10 +4367,9 @@ void menu_entries_append(
       free(list_info.fullpath);
 
    file_list_free_actiondata(list, idx);
-   cbs                             = (menu_file_list_cbs_t*)
-      malloc(sizeof(menu_file_list_cbs_t));
 
-   if (!cbs)
+   if (!(cbs = (menu_file_list_cbs_t*)
+      malloc(sizeof(menu_file_list_cbs_t))))
       return;
 
    cbs->action_sublabel_cache[0]   = '\0';

@@ -647,7 +647,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
                                      "cut -f3 | "
                                      "sort", "r");
 
-            if (zones_file != NULL)
+            if (zones_file)
             {
                char zone_desc[TIMEZONE_LENGTH];
                while (fgets(zone_desc, TIMEZONE_LENGTH, zones_file))
@@ -658,7 +658,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
                      if (zone_desc[--zone_desc_len] == '\n')
                         zone_desc[zone_desc_len] = '\0';
 
-                  if (strlen(zone_desc) > 0)
+                  if (zone_desc && zone_desc[0] != '\0')
                   {
                      const char *opt  = zone_desc;
                      *len            += strlen(opt) + 1;
@@ -717,8 +717,6 @@ void retroarch_path_set_redirect(settings_t *settings)
    bool savestates_in_content_dir              = settings->bools.savestates_in_content_dir;
 
    content_dir_name[0]  = '\0';
-   new_savefile_dir[0]  = '\0';
-   new_savestate_dir[0] = '\0';
 
    /* Initialize current save directories
     * with the values from the config. */
@@ -925,7 +923,6 @@ void path_set_special(char **argv, unsigned num_content)
    struct string_list subsystem_paths  = {0};
    runloop_state_t         *runloop_st = runloop_state_get_ptr();
    const char *savestate_dir           = runloop_st->savestate_dir;
-
 
    /* First content file is the significant one. */
    runloop_path_set_basename(argv[0]);
@@ -1239,9 +1236,6 @@ void ram_state_to_file(void)
 enum rarch_content_type path_is_media_type(const char *path)
 {
    char ext_lower[128];
-
-   ext_lower[0] = '\0';
-
    strlcpy(ext_lower, path_get_extension(path), sizeof(ext_lower));
 
    string_to_lower(ext_lower);
@@ -4327,8 +4321,6 @@ static void retroarch_parse_input_libretro_path(const char *path)
    bool core_path_matched = false;
    char tmp_path[PATH_MAX_LENGTH];
 
-   tmp_path[0] = '\0';
-
    if (string_is_empty(path))
       goto end;
 
@@ -4545,7 +4537,7 @@ static bool retroarch_parse_input_and_config(
       string_trim_whitespace_left(p_rarch->launch_arguments);
       string_trim_whitespace_right(p_rarch->launch_arguments);
 
-      first_run = false;
+      first_run  = false;
 
       /* Command line interface is only considered
        * to be 'active' (i.e. used by a third party)

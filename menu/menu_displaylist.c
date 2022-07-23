@@ -478,8 +478,6 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
                settings->uints.menu_content_show_contentless_cores;
 #endif
 
-   tmp[0] = '\0';
-
    /* Check whether we are parsing information for a
     * core updater/manager entry or the currently loaded core */
    if ((info->type == FILE_TYPE_DOWNLOAD_CORE) ||
@@ -1151,7 +1149,7 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
 
       if (!string_is_empty(val_label_str))
       {
-         char val_d[256];
+         char val_d[256]; /* TODO/FIXME - way too big for just storing an integer */
 
          val_d[0] = '\0';
          snprintf(val_d, sizeof(val_d), "%d", option_index);
@@ -1651,9 +1649,6 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    {
       char cpu_str[NAME_MAX_LENGTH];
       const char *model = frontend_driver_get_cpu_model_name();
-
-      cpu_str[0] = '\0';
-
       strlcpy(cpu_str,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL),
             sizeof(cpu_str));
@@ -1671,9 +1666,6 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
    {
       char cpu_str[NAME_MAX_LENGTH];
-
-      cpu_str[0] = '\0';
-
       strlcpy(cpu_str,
             msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES),
@@ -1691,9 +1683,6 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       char cpu_str[8192];
       char cpu_arch_str[PATH_MAX_LENGTH];
       char cpu_text_str[PATH_MAX_LENGTH];
-
-      cpu_str[0] = cpu_arch_str[0] = cpu_text_str[0] = '\0';
-
       strlcpy(cpu_text_str,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE),
             sizeof(cpu_text_str));
@@ -1701,7 +1690,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       frontend_driver_get_cpu_architecture_str(
             cpu_arch_str, sizeof(cpu_arch_str));
 
-      snprintf(cpu_str, sizeof(cpu_str), "%s %s", cpu_text_str, cpu_arch_str);
+      strlcpy(cpu_str, cpu_text_str, sizeof(cpu_str));
+      strlcat(cpu_str, " ", sizeof(cpu_str));
+      strlcat(cpu_str, cpu_arch_str, sizeof(cpu_str));
 
       if (menu_entries_append_enum(list, cpu_str,
             msg_hash_to_str(MENU_ENUM_LABEL_CPU_ARCHITECTURE),
@@ -2067,8 +2058,6 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          {SUPPORTS_LIBUSB      ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT},
       };
 
-      feat_str[0] = '\0';
-
       for (i = 0; i < ARRAY_SIZE(info_list); i++)
       {
          strlcpy(feat_str,
@@ -2108,7 +2097,6 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    bool pl_show_sublabels            = settings->bools.playlist_show_sublabels;
    void (*sanitization)(char*);
 
-   label_spacer[0] = '\0';
    info->count     = 0;
 
    if (list_size == 0)
@@ -2149,16 +2137,12 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
             strlen(path_playlist), STRLEN_CONST("_history")))
    {
       char system_name[15];
-      system_name[0] = '\0';
-
       strlcpy(system_name, path_playlist, sizeof(system_name));
       menu_driver_set_thumbnail_system(system_name, sizeof(system_name));
    }
    else if (!string_is_empty(info->path))
    {
       char lpl_basename[256];
-      lpl_basename[0] = '\0';
-
       fill_pathname_base(lpl_basename, info->path, sizeof(lpl_basename));
       path_remove_extension(lpl_basename);
       menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
@@ -2197,8 +2181,6 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       const struct playlist_entry *entry = NULL;
       const char *entry_path             = NULL;
       bool entry_valid                   = true;
-
-      menu_entry_label[0] = '\0';
 
       /* Read playlist entry */
       playlist_get_index(playlist, i, &entry);
@@ -2411,7 +2393,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
    playlist_config_set_base_content_directory(&playlist_config, settings->bools.playlist_portable_paths ? settings->paths.directory_menu_content : NULL);
 
-   path_playlist[0] = path_base[0] = query[0] = '\0';
+   query[0] = '\0';
 
    database_info_build_query_enum(query, sizeof(query),
          DATABASE_QUERY_ENTRY, info->path_b);
@@ -3291,9 +3273,6 @@ static int menu_displaylist_parse_horizontal_list(
       char lpl_basename[256];
       char path_playlist[PATH_MAX_LENGTH];
       const char *dir_playlist  = settings->paths.directory_playlist;
-
-      lpl_basename[0]           = '\0';
-      path_playlist[0]          = '\0';
 
       fill_pathname_join(path_playlist, dir_playlist, item->path,
             sizeof(path_playlist));
@@ -4183,9 +4162,6 @@ static unsigned menu_displaylist_parse_cores(
 
    {
       char out_dir[PATH_MAX_LENGTH];
-
-      out_dir[0] = '\0';
-
       fill_pathname_parent_dir(out_dir, path, sizeof(out_dir));
 
       if (string_is_empty(out_dir))
@@ -4244,10 +4220,9 @@ static unsigned menu_displaylist_parse_cores(
             break;
       }
 
-      is_dir = (file_type == FILE_TYPE_DIRECTORY);
-
+      is_dir  = (file_type == FILE_TYPE_DIRECTORY);
       /* Need to preserve slash first time. */
-      path = str_list->elems[i].data;
+      path    = str_list->elems[i].data;
 
       if (!string_is_empty(path))
          path = path_basename_nocompression(path);
@@ -4313,7 +4288,6 @@ static unsigned menu_displaylist_parse_cores(
          {
             char core_path[PATH_MAX_LENGTH];
             char display_name[PATH_MAX_LENGTH];
-            core_path[0]       =
             display_name[0]    = '\0';
 
             fill_pathname_join(core_path, dir, path, sizeof(core_path));
@@ -4580,8 +4554,6 @@ static unsigned menu_displaylist_parse_pl_thumbnail_download_list(
          char path_base[PATH_MAX_LENGTH];
          const char *path;
 
-         path_base[0] = '\0';
-
          if (str_list->elems[i].attr.i == FILE_TYPE_DIRECTORY)
             continue;
 
@@ -4743,9 +4715,6 @@ static unsigned menu_displaylist_parse_content_information(
    {
       char *db_name_no_ext = NULL;
       char db_name_no_ext_buff[PATH_MAX_LENGTH];
-
-      db_name_no_ext_buff[0] = '\0';
-
       /* Remove .lpl extension
       * > path_remove_extension() requires a char * (not const)
       *   so have to use a temporary buffer... */
@@ -4776,7 +4745,6 @@ static unsigned menu_displaylist_parse_content_information(
       if (string_is_empty(content_label))
       {
          char content_tmp[PATH_MAX_LENGTH];
-         content_tmp[0] = '\0';
          strlcpy(content_tmp, content_path, sizeof(content_tmp));
          path_remove_extension(content_tmp);
          content_label  = path_basename(content_tmp);
@@ -11521,13 +11489,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                char combined_path[PATH_MAX_LENGTH];
                const char *ext  = NULL;
 
-               combined_path[0] = '\0';
-
                fill_pathname_join(combined_path, menu->scratch2_buf,
                      menu->scratch_buf, sizeof(combined_path));
 
                ext = path_get_extension(combined_path);
-
 
                if (audio_driver_mixer_extension_supported(ext))
                {
@@ -11912,24 +11877,24 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_NETWORKING
             char new_label[PATH_MAX_LENGTH];
             struct string_list str_list = {0};
-
-            new_label[0] = '\0';
-
             string_list_initialize(&str_list);
             string_split_noalloc(&str_list, info->path, ";");
 
             if (str_list.elems[0].data)
                strlcpy(new_label, str_list.elems[0].data, sizeof(new_label));
+            else
+               new_label[0] = '\0';
             if (str_list.elems[1].data)
                strlcpy(menu->core_buf, str_list.elems[1].data, menu->core_len);
-
-            count = print_buf_lines(info->list, menu->core_buf, new_label,
-                  (int)menu->core_len, FILE_TYPE_DOWNLOAD_URL, false, false);
-
-            if (count == 0)
+            if ((count = print_buf_lines(
+                        info->list, menu->core_buf, new_label,
+                        (int)menu->core_len, FILE_TYPE_DOWNLOAD_URL,
+                        false, false)) == 0)
                menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                     msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                     msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                     msg_hash_to_str(
+                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
                      MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
                      FILE_TYPE_NONE, 0, 0);
 
@@ -11949,16 +11914,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             const char *
                network_buildbot_assets_url = settings->paths.network_buildbot_assets_url;
 
-            new_label[0] = '\0';
-
             fill_pathname_join(new_label,
                   network_buildbot_assets_url,
                   "cores", sizeof(new_label));
 
-            count = print_buf_lines(info->list, menu->core_buf, new_label,
-                  (int)menu->core_len, FILE_TYPE_DOWNLOAD_URL, true, false);
-
-            if (count == 0)
+            if ((count = print_buf_lines(info->list, menu->core_buf, new_label,
+                  (int)menu->core_len, FILE_TYPE_DOWNLOAD_URL, true, false)) == 0)
                menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
                      msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
@@ -12159,9 +12120,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             char path_playlist[PATH_MAX_LENGTH];
             playlist_t *playlist            = NULL;
             const char *dir_playlist        = settings->paths.directory_playlist;
-
-            path_playlist[0] = '\0';
-
             fill_pathname_join(
                   path_playlist,
                   dir_playlist,
@@ -13625,9 +13583,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             unsigned val              = atoi(info->path);
             const char *temp_val      = msg_hash_to_str(
                   (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + (val-1)));
-
-            lbl[0]                    = '\0';
-
             strlcpy(lbl, temp_val, sizeof(lbl));
             ret = MENU_DISPLAYLIST_PARSE_SETTINGS(info->list,
                   lbl, PARSE_NONE, true, MENU_SETTINGS_INPUT_BEGIN);

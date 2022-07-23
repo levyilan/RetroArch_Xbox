@@ -1403,9 +1403,7 @@ static bool netplay_handshake_pre_nick(netplay_t *netplay,
       const char *dmsg = NULL;
 
       if (netplay->is_server)
-      {
          dmsg = msg_hash_to_str(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT);
-      }
       else
       {
          dmsg = msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST);
@@ -1537,7 +1535,6 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
    ssize_t recvd;
    uint32_t content_crc             = 0;
    int32_t  ping                    = 0;
-   const char *dmsg                 = NULL;
    struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
    settings_t *settings             = config_get_ptr();
    bool extra_notifications         = settings->bools.notification_show_netplay_extra;
@@ -6550,20 +6547,34 @@ static void netplay_handle_slaves(netplay_t *netplay)
 static void netplay_announce_nat_traversal(netplay_t *netplay,
       uint16_t ext_port)
 {
-#ifndef HAVE_SOCKET_LEGACY
-   char msg[512], host[256], port[6];
+   char msg[512];
    const char *dmsg           = NULL;
    net_driver_state_t *net_st = &networking_driver_st;
   
    if (net_st->nat_traversal_request.status == NAT_TRAVERSAL_STATUS_OPENED)
    {
+      char host[256], port[6];
+
       netplay->ext_tcp_port = ext_port;
 
+#ifndef HAVE_SOCKET_LEGACY
       if (!getnameinfo(
-            (struct sockaddr *)&net_st->nat_traversal_request.request.addr,
+            (struct sockaddr*)&net_st->nat_traversal_request.request.addr,
             sizeof(net_st->nat_traversal_request.request.addr),
             host, sizeof(host), port, sizeof(port),
             NI_NUMERICHOST | NI_NUMERICSERV))
+#else
+      {
+         uint8_t *addr8  =
+            (uint8_t*)&net_st->nat_traversal_request.request.addr.sin_addr;
+         uint16_t port16 =
+            ntohs(net_st->nat_traversal_request.request.addr.sin_port);
+
+         snprintf(host, sizeof(host), "%d.%d.%d.%d",
+            (int)addr8[0], (int)addr8[1], (int)addr8[2], (int)addr8[3]);
+         snprintf(port, sizeof(port), "%hu", (unsigned short)port16);
+      }
+#endif
       {
          snprintf(msg, sizeof(msg), "%s: %s:%s",
             msg_hash_to_str(MSG_PUBLIC_ADDRESS), host, port);
@@ -6579,7 +6590,6 @@ static void netplay_announce_nat_traversal(netplay_t *netplay,
       runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
-#endif
 }
 
 /**
@@ -8976,6 +8986,28 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          }
 #endif
          break;
+
+#ifndef HAVE_DYNAMIC
+      case RARCH_NETPLAY_CTL_GET_FORK_ARGS:
+         if (data && !string_is_empty(net_st->netplay_fork_args))
+            strlcpy((char*)data, net_st->netplay_fork_args,
+               sizeof(net_st->netplay_fork_args));
+         else
+            ret = false;
+         break;
+
+      case RARCH_NETPLAY_CTL_SET_FORK_ARGS:
+         if (data)
+            strlcpy(net_st->netplay_fork_args, (const char*)data,
+               sizeof(net_st->netplay_fork_args));
+         else
+            ret = false;
+         break;
+
+      case RARCH_NETPLAY_CTL_CLEAR_FORK_ARGS:
+         *net_st->netplay_fork_args = '\0';
+         break;
+#endif
 
       case RARCH_NETPLAY_CTL_REFRESH_CLIENT_INFO:
          if (!netplay || !netplay->is_server)

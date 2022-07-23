@@ -74,7 +74,7 @@
  * Create a new linked list with one node in it
  * The path on this node will be set to NULL
 **/
-struct path_linked_list* path_linked_list_new()
+struct path_linked_list* path_linked_list_new(void)
 {
    struct path_linked_list* paths_list = (struct path_linked_list*)malloc(sizeof(*paths_list));
    paths_list->next = NULL;
@@ -83,23 +83,19 @@ struct path_linked_list* path_linked_list_new()
 }
 
 /* Free the entire linked list */
-bool path_linked_list_free(struct path_linked_list *in_path_linked_list)
+void path_linked_list_free(struct path_linked_list *in_path_linked_list)
 {
-   struct path_linked_list *node_tmp = NULL;
-
-   node_tmp = (struct path_linked_list*)in_path_linked_list;
+   struct path_linked_list *node_tmp = (struct path_linked_list*)in_path_linked_list;
    while (node_tmp)
    {
       struct path_linked_list *hold = NULL;
       if (node_tmp->path)
          free(node_tmp->path);
-      hold    = (struct path_linked_list*)node_tmp;
+      hold     = (struct path_linked_list*)node_tmp;
       node_tmp = node_tmp->next;
       if (hold)
          free(hold);
    }
-
-   return true;
 }
 
 /**
@@ -151,16 +147,12 @@ void path_linked_list_add_path(struct path_linked_list *in_path_linked_list, cha
  */
 const char *path_get_archive_delim(const char *path)
 {
-   const char *delim      = NULL;
    char buf[5];
-
-   buf[0] = '\0';
-
    /* Find delimiter position
     * > Since filenames may contain '#' characters,
     *   must loop until we find the first '#' that
     *   is directly *after* a compression extension */
-   delim = strchr(path, '#');
+   const char *delim      = strchr(path, '#');
 
    while (delim)
    {
@@ -285,9 +277,6 @@ void fill_pathname(char *out_path, const char *in_path,
 {
    char tmp_path[PATH_MAX_LENGTH];
    char *tok   = NULL;
-
-   tmp_path[0] = '\0';
-
    strlcpy(tmp_path, in_path, sizeof(tmp_path));
    if ((tok = (char*)strrchr(path_basename(tmp_path), '.')))
       *tok = '\0';
@@ -510,8 +499,6 @@ void fill_str_dated_filename(char *out_filename,
    struct tm tm_;
    time_t cur_time = time(NULL);
 
-   format[0]       = '\0';
-
    rtime_localtime(&cur_time, &tm_);
 
    if (string_is_empty(ext))
@@ -539,8 +526,7 @@ void fill_str_dated_filename(char *out_filename,
 void path_basedir(char *path)
 {
    char *last = NULL;
-
-   if (strlen(path) < 2)
+   if (!path || path[0] == '\0' || path[1] == '\0')
       return;
 
    if ((last = find_last_slash(path)))
@@ -818,8 +804,15 @@ size_t path_relative_to(char *out,
 
 #ifdef _WIN32
    /* For different drives, return absolute path */
-   if (strlen(path) >= 2 && strlen(base) >= 2
-         && path[1] == ':' && base[1] == ':'
+   if (
+            path
+         && base
+         && path[0] != '\0' 
+         && path[1] != '\0'
+         && base[0] != '\0'
+         && base[1] != '\0'
+         && path[1] == ':' 
+         && base[1] == ':'
          && path[0] != base[0])
       return strlcpy(out, path, size);
 #endif
@@ -941,9 +934,6 @@ void fill_pathname_expand_special(char *out_path,
    if (in_path[0] == '~')
    {
       char *home_dir = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-
-      home_dir[0] = '\0';
-
       fill_pathname_home_dir(home_dir,
          PATH_MAX_LENGTH * sizeof(char));
 
@@ -1016,7 +1006,6 @@ void fill_pathname_abbreviate_special(char *out_path,
    char home_dir[PATH_MAX_LENGTH];
 
    application_dir[0] = '\0';
-   home_dir[0]        = '\0';
 
    /* application_dir could be zero-string. Safeguard against this.
     *
@@ -1087,7 +1076,7 @@ void pathname_make_slashes_portable(char *path)
 }
 
 /* Get the number of slashes in a path, returns an integer */
-int get_pathname_num_slashes(const char *in_path)
+static int get_pathname_num_slashes(const char *in_path)
 {
    int num_slashes = 0;
    int i = 0;
@@ -1168,7 +1157,7 @@ void fill_pathname_abbreviated_or_relative(char *out_path, const char *in_refpat
 void path_basedir_wrapper(char *path)
 {
    char *last = NULL;
-   if (strlen(path) < 2)
+   if (!path || path[0] == '\0' || path[1] == '\0')
       return;
 
 #ifdef HAVE_COMPRESSION
@@ -1320,8 +1309,7 @@ void fill_pathname_home_dir(char *s, size_t len)
 bool is_path_accessible_using_standard_io(const char *path)
 {
 #ifdef __WINRT__
-   DWORD trygetattrbs = GetFileAttributesA(path);
-   return trygetattrbs != INVALID_FILE_ATTRIBUTES;
+   return GetFileAttributesA(path) != INVALID_FILE_ATTRIBUTES;
 #else
    return true;
 #endif

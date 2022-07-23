@@ -27,6 +27,7 @@
 #include <retro_assert.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
+#include <array/rhmap.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -2889,9 +2890,6 @@ void config_set_defaults(void *data)
 #if TARGET_OS_IPHONE
       {
          char config_file_path[PATH_MAX_LENGTH];
-
-         config_file_path[0]           = '\0';
-
          fill_pathname_join(config_file_path,
                settings->paths.directory_menu_config,
                FILE_PATH_MAIN_CONFIG,
@@ -3092,7 +3090,7 @@ static config_file_t *open_default_config_file(void)
           * safely use config_save_on_exit. */
          fill_pathname_resolve_relative(conf_path, app_path,
                FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
-         config_set_bool(conf, "config_save_on_exit", true);
+         config_set_string(conf, "config_save_on_exit", "true");
          saved = config_file_write(conf, conf_path, true);
       }
 
@@ -3127,7 +3125,7 @@ static config_file_t *open_default_config_file(void)
 
       if (conf)
       {
-         config_set_bool(conf, "config_save_on_exit", true);
+         config_set_string(conf, "config_save_on_exit", "true");
          saved = config_file_write(conf, conf_path, true);
       }
 
@@ -3167,11 +3165,7 @@ static config_file_t *open_default_config_file(void)
    {
       bool dir_created = false;
       char basedir[PATH_MAX_LENGTH];
-
-      basedir[0]       = '\0';
-
       /* Try to create a new config file. */
-
       fill_pathname_basedir(basedir, application_data, sizeof(basedir));
       fill_pathname_join(conf_path, application_data,
             FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
@@ -3182,16 +3176,11 @@ static config_file_t *open_default_config_file(void)
       {
          char skeleton_conf[PATH_MAX_LENGTH];
          bool saved          = false;
-
-         skeleton_conf[0] = '\0';
-
          /* Build a retroarch.cfg path from the
           * global config directory (/etc). */
          fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR,
             FILE_PATH_MAIN_CONFIG, sizeof(skeleton_conf));
-
-         conf = config_file_new_from_path_to_string(skeleton_conf);
-         if (conf)
+         if ((conf = config_file_new_from_path_to_string(skeleton_conf)))
             RARCH_WARN("[Config]: Using skeleton config \"%s\" as base for a new config file.\n", skeleton_conf);
          else
             conf = config_file_new_alloc();
@@ -3200,7 +3189,7 @@ static config_file_t *open_default_config_file(void)
          {
             /* Since this is a clean config file, we can
              * safely use config_save_on_exit. */
-            config_set_bool(conf, "config_save_on_exit", true);
+            config_set_string(conf, "config_save_on_exit", "true");
             saved = config_file_write(conf, conf_path, true);
          }
 
@@ -3322,9 +3311,6 @@ static bool config_load_file(global_t *global,
        * variable. */
       char tmp_append_path[PATH_MAX_LENGTH];
       const char *extra_path = NULL;
-
-      tmp_append_path[0] = '\0';
-
       strlcpy(tmp_append_path, path_get(RARCH_PATH_CONFIG_APPEND),
             sizeof(tmp_append_path));
       extra_path = strtok_r(tmp_append_path, "|", &save);
@@ -3781,7 +3767,7 @@ static bool config_load_file(global_t *global,
    frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
    recording_driver_update_streaming_url();
 
-   if (!config_entry_exists(conf, "user_language"))
+   if (!(bool)RHMAP_HAS_STR(conf->entries_map, "user_language"))
       msg_hash_set_uint(MSG_HASH_USER_LANGUAGE, frontend_driver_get_user_language());
 
    if (frontend_driver_has_gamemode() &&
@@ -3799,8 +3785,8 @@ static bool config_load_file(global_t *global,
     * history playlist size limit. (Have to do this, otherwise
     * users with large custom history size limits may lose
     * favourites entries when updating RetroArch...) */
-   if ( config_entry_exists(conf, "content_history_size") &&
-       !config_entry_exists(conf, "content_favorites_size"))
+   if ( (bool)RHMAP_HAS_STR(conf->entries_map, "content_history_size") &&
+       !(bool)RHMAP_HAS_STR(conf->entries_map, "content_favorites_size"))
    {
       if (settings->uints.content_history_size > 999)
          settings->ints.content_favorites_size = -1;
@@ -3916,9 +3902,6 @@ bool config_load_override(void *data)
 
       should_append = true;
    }
-   else
-      RARCH_LOG("[Overrides]: No core-specific overrides found at \"%s\".\n",
-            core_path);
 
    if (has_content)
    {
@@ -3941,18 +3924,12 @@ bool config_load_override(void *data)
                   );
          }
          else
-         {
-            tmp_path[0]    = '\0';
             strlcpy(tmp_path, content_path, sizeof(tmp_path));
-         }
 
          path_set(RARCH_PATH_CONFIG_APPEND, tmp_path);
 
          should_append = true;
       }
-      else
-         RARCH_LOG("[Overrides]: No content-dir-specific overrides found at \"%s\".\n",
-            content_path);
 
       /* per-game overrides */
       /* Create a new config file from game_path */
@@ -3973,18 +3950,12 @@ bool config_load_override(void *data)
                   );
          }
          else
-         {
-            tmp_path[0]    = '\0';
             strlcpy(tmp_path, game_path, sizeof(tmp_path));
-         }
 
          path_set(RARCH_PATH_CONFIG_APPEND, tmp_path);
 
          should_append = true;
       }
-      else
-         RARCH_LOG("[Overrides]: No game-specific overrides found at \"%s\".\n",
-               game_path);
    }
 
    if (!should_append)
@@ -4087,8 +4058,6 @@ bool config_load_remap(const char *directory_input_remapping,
    if (string_is_empty(core_name) ||
        string_is_empty(directory_input_remapping))
       return false;
-
-   RARCH_LOG("[Remaps]: Remap directory: \"%s\".\n", directory_input_remapping);
 
    /* Concatenate strings into full paths for core_path,
     * game_path, content_path */
@@ -4208,10 +4177,14 @@ static void video_driver_save_settings(global_t *global, config_file_t *conf)
 {
    config_set_int(conf, "gamma_correction",
          global->console.screen.gamma_correction);
-   config_set_bool(conf, "flicker_filter_enable",
-         global->console.flickerfilter_enable);
-   config_set_bool(conf, "soft_filter_enable",
-         global->console.softfilter_enable);
+   config_set_string(conf, "flicker_filter_enable",
+           global->console.flickerfilter_enable
+         ? "true"
+         : "false");
+   config_set_string(conf, "soft_filter_enable",
+           global->console.softfilter_enable
+         ? "true"
+         : "false");
 
    config_set_int(conf, "soft_filter_index",
          global->console.screen.soft_filter_index);
@@ -4262,9 +4235,6 @@ static void save_keybind_joykey(config_file_t *conf,
       const struct retro_keybind *bind, bool save_empty)
 {
    char key[64];
-
-   key[0] = '\0';
-
    fill_pathname_join_delim(key, prefix,
          base, '_', sizeof(key));
    strlcat(key, "_btn", sizeof(key));
@@ -4286,11 +4256,6 @@ static void save_keybind_axis(config_file_t *conf,
       const struct retro_keybind *bind, bool save_empty)
 {
    char key[64];
-   unsigned axis   = 0;
-   char dir        = '\0';
-
-   key[0]          = '\0';
-
    fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
    strlcat(key, "_axis", sizeof(key));
 
@@ -4301,22 +4266,16 @@ static void save_keybind_axis(config_file_t *conf,
    }
    else if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
    {
-      dir = '-';
-      axis = AXIS_NEG_GET(bind->joyaxis);
+      char config[16];
+      config[0] = '\0';
+      snprintf(config, sizeof(config), "-%u", AXIS_NEG_GET(bind->joyaxis));
+      config_set_string(conf, key, config);
    }
    else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
    {
-      dir = '+';
-      axis = AXIS_POS_GET(bind->joyaxis);
-   }
-
-   if (dir)
-   {
       char config[16];
-
       config[0] = '\0';
-
-      snprintf(config, sizeof(config), "%c%u", dir, axis);
+      snprintf(config, sizeof(config), "+%u", AXIS_POS_GET(bind->joyaxis));
       config_set_string(conf, key, config);
    }
 }
@@ -4327,9 +4286,6 @@ static void save_keybind_mbutton(config_file_t *conf,
       const struct retro_keybind *bind, bool save_empty)
 {
    char key[64];
-
-   key[0] = '\0';
-
    fill_pathname_join_delim(key, prefix,
       base, '_', sizeof(key));
    strlcat(key, "_mbtn", sizeof(key));
@@ -4449,7 +4405,7 @@ static void input_config_save_keybinds_user(config_file_t *conf, unsigned user)
          continue;
 
       base                                 = keybind->base;
-      key[0] = btn[0]                      = '\0';
+      btn[0]                               = '\0';
 
       fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
 
@@ -4486,9 +4442,6 @@ bool config_save_autoconf_profile(const
    const char *joypad_driver_fallback   = settings->arrays.input_joypad_driver;
    const char *joypad_driver            = NULL;
    char *sanitised_name                 = NULL;
-
-   buf[0]                               = '\0';
-   autoconf_file[0]                     = '\0';
 
    if (string_is_empty(device_name))
       goto end;
@@ -4736,8 +4689,9 @@ bool config_save_file(const char *path)
       for (i = 0; i < (unsigned)bool_settings_size; i++)
          if (!bool_settings[i].override ||
              !retroarch_override_setting_is_set(bool_settings[i].override, NULL))
-            config_set_bool(conf, bool_settings[i].ident,
-                  *bool_settings[i].ptr);
+            config_set_string(conf, bool_settings[i].ident,
+                  *bool_settings[i].ptr
+                  ? "true" : "false");
 
       free(bool_settings);
    }
@@ -4750,16 +4704,19 @@ bool config_save_file(const char *path)
       tmp[0] = '\0';
 
       snprintf(tmp, sizeof(tmp), "network_remote_enable_user_p%u", i + 1);
-      config_set_bool(conf, tmp, settings->bools.network_remote_enable_user[i]);
+      config_set_string(conf, tmp,
+            settings->bools.network_remote_enable_user[i]
+            ? "true" : "false");
    }
 #endif
 
    /* Verbosity isn't in bool_settings since it needs to be loaded differently */
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL))
-      config_set_bool(conf, "log_verbosity",
-            verbosity_is_enabled());
-   config_set_bool(conf, "perfcnt_enable",
-         retroarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL));
+      config_set_string(conf, "log_verbosity",
+            verbosity_is_enabled() ? "true" : "false");
+   config_set_string(conf, "perfcnt_enable",
+            retroarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL) 
+         ? "true" : "false");
 
    msg_color = (((int)(settings->floats.video_msg_color_r * 255.0f) & 0xff) << 16) +
                (((int)(settings->floats.video_msg_color_g * 255.0f) & 0xff) <<  8) +
@@ -4851,7 +4808,6 @@ bool config_save_overrides(enum override_type type, void *data)
    bool has_content                            = !string_is_empty(rarch_path_basename);
 
    config_directory[0]   = '\0';
-   override_directory[0] = '\0';
    core_path[0]          = '\0';
    game_path[0]          = '\0';
    content_path[0]       = '\0';
@@ -4919,8 +4875,8 @@ bool config_save_overrides(enum override_type type, void *data)
       for (i = 0; i < (unsigned)bool_settings_size; i++)
       {
          if ((*bool_settings[i].ptr) != (*bool_overrides[i].ptr))
-            config_set_bool(conf, bool_overrides[i].ident,
-                  (*bool_overrides[i].ptr));
+            config_set_string(conf, bool_overrides[i].ident,
+                  (*bool_overrides[i].ptr) ? "true" : "false");
       }
       for (i = 0; i < (unsigned)int_settings_size; i++)
       {
@@ -5153,8 +5109,6 @@ bool input_remapping_load_file(void *data, const char *path)
             char btn_ident[128];
             char key_ident[128];
 
-            btn_ident[0] = key_ident[0] = '\0';
-
             fill_pathname_join_delim(btn_ident, s1,
                   key_string, '_', sizeof(btn_ident));
             fill_pathname_join_delim(key_ident, s2,
@@ -5181,9 +5135,6 @@ bool input_remapping_load_file(void *data, const char *path)
             char key_ident[128];
             int stk_remap = -1;
             int key_remap = -1;
-
-            stk_ident[0]  = '\0';
-            key_ident[0]  = '\0';
 
             fill_pathname_join_delim(stk_ident, s3,
                   key_string, '_', sizeof(stk_ident));
@@ -5251,8 +5202,6 @@ bool input_remapping_save_file(const char *path)
    settings_t        *settings = config_st;
    unsigned          max_users = settings->uints.input_max_users;
 
-   remap_file_dir[0]           = '\0';
-
    if (string_is_empty(path))
       return false;
 
@@ -5313,9 +5262,6 @@ bool input_remapping_save_file(const char *path)
          unsigned remap_id      = settings->uints.input_remap_ids[i][j];
          unsigned keymap_id     = settings->uints.input_keymapper_ids[i][j];
 
-         btn_ident[0]           = '\0';
-         key_ident[0]           = '\0';
-
          fill_pathname_join_delim(btn_ident, s1,
                key_string, '_', sizeof(btn_ident));
          fill_pathname_join_delim(key_ident, s2,
@@ -5348,9 +5294,6 @@ bool input_remapping_save_file(const char *path)
          const char *key_string = key_strings[j];
          unsigned remap_id      = settings->uints.input_remap_ids[i][j];
          unsigned keymap_id     = settings->uints.input_keymapper_ids[i][j];
-
-         stk_ident[0]           = '\0';
-         key_ident[0]           = '\0';
 
          fill_pathname_join_delim(stk_ident, s3,
                key_string, '_', sizeof(stk_ident));
@@ -5442,9 +5385,7 @@ void config_load_file_salamander(void)
       return;
 
    /* Open config file */
-   config = config_file_new_from_path_to_string(config_path);
-
-   if (!config)
+   if (!(config = config_file_new_from_path_to_string(config_path)))
       return;
 
    /* Read 'libretro_path' value and update
@@ -5595,8 +5536,6 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
       {
          char str[256];
          const char *base = keybind->base;
-         str[0]                     = '\0';
-
          fill_pathname_join_delim(str, "input", base,  '_', sizeof(str));
 
          input_config_parse_joy_button(str, config, "input", base, &binds[i]);
@@ -5616,7 +5555,7 @@ void input_config_parse_mouse_button(
    config_file_t *conf        = (config_file_t*)conf_data;
    struct retro_keybind *bind = (struct retro_keybind*)bind_data;
 
-   tmp[0] = key[0]     = '\0';
+   tmp[0] = '\0';
 
    fill_pathname_join_delim(key, s, "mbtn", '_', sizeof(key));
 
@@ -5684,7 +5623,7 @@ void input_config_parse_joy_axis(
    struct retro_keybind *bind              = (struct retro_keybind*)bind_data;
    struct config_entry_list *tmp_a         = NULL;
 
-   tmp[0] = key[0] = key_label[0] = '\0';
+   tmp[0] = '\0';
 
    fill_pathname_join_delim(key, s,
          "axis", '_', sizeof(key));
@@ -5699,7 +5638,11 @@ void input_config_parse_joy_axis(
             && tmp[3] == '\0'
          )
          bind->joyaxis = AXIS_NONE;
-      else if (strlen(tmp) >= 2 && (*tmp == '+' || *tmp == '-'))
+      else if 
+         (     tmp[0] != '\0'   
+          &&   tmp[1] != '\0'
+          && (*tmp    == '+' 
+          ||  *tmp    == '-'))
       {
          int i_axis = (int)strtol(tmp + 1, NULL, 0);
          if (*tmp == '+')
@@ -5771,7 +5714,7 @@ void input_config_parse_joy_button(
    struct retro_keybind *bind              = (struct retro_keybind*)bind_data;
    struct config_entry_list *tmp_a         = NULL;
 
-   tmp[0] = key[0] = key_label[0] = '\0';
+   tmp[0]                                  = '\0';
 
    fill_pathname_join_delim(key, s,
          "btn", '_', sizeof(key));

@@ -84,9 +84,6 @@ static void fill_pathname_expanded_and_absolute(char *out_path,
       const char *in_refpath, const char *in_path)
 {
    char expanded_path[PATH_MAX_LENGTH];
-
-   expanded_path[0] = '\0';
-
    /* Expand paths which start with :\ to an absolute path */
    fill_pathname_expand_special(expanded_path,
          in_path, sizeof(expanded_path));
@@ -293,7 +290,6 @@ static bool video_shader_parse_pass(config_file_t *conf,
    snprintf(scale_name_buf, sizeof(scale_name_buf), "scale_type_y%u", i);
    config_get_array(conf, scale_name_buf, scale_type_y, sizeof(scale_type_y));
 
-
    if (*scale_type)
    {
       strlcpy(scale_type_x, scale_type, sizeof(scale_type_x));
@@ -438,8 +434,6 @@ static bool video_shader_parse_textures(config_file_t *conf,
       bool smooth         = false;
       struct config_entry_list 
          *entry           = NULL;
-
-      id_filter[0] = id_wrap[0] = id_mipmap[0] = '\0';
 
       if (!(entry = config_get_entry(conf, id)) ||
             string_is_empty(entry->value))
@@ -725,9 +719,9 @@ static void shader_write_fbo(config_file_t *conf,
    key[0] = '\0';
 
    snprintf(key, sizeof(key), "float_framebuffer%u", i);
-   config_set_bool(conf, key, fbo->fp_fbo);
+   config_set_string(conf, key, fbo->fp_fbo ? "true" : "false");
    snprintf(key, sizeof(key), "srgb_framebuffer%u", i);
-   config_set_bool(conf, key, fbo->srgb_fbo);
+   config_set_string(conf, key, fbo->srgb_fbo ? "true" : "false");
 
    if (!fbo->valid)
       return;
@@ -795,7 +789,10 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
       if (pass->filter != RARCH_FILTER_UNSPEC)
       {
          snprintf(key, sizeof(key), "filter_linear%u", i);
-         config_set_bool(conf, key, pass->filter == RARCH_FILTER_LINEAR);
+         config_set_string(conf, key,
+               (pass->filter == RARCH_FILTER_LINEAR)
+               ? "true"
+               : "false");
       }
 
       snprintf(key, sizeof(key), "wrap_mode%u", i);
@@ -808,7 +805,7 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
       }
 
       snprintf(key, sizeof(key), "mipmap_input%u", i);
-      config_set_bool(conf, key, pass->mipmap);
+      config_set_string(conf, key, pass->mipmap ? "true" : "false");
 
       snprintf(key, sizeof(key), "alias%u", i);
       config_set_string(conf, key, pass->alias);
@@ -825,9 +822,6 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
    if (shader->luts)
    {
       char textures[4096];
-
-      textures[0] = '\0';
-
       /* Names of the textures */
       strlcpy(textures, shader->lut[0].id, sizeof(textures));
 
@@ -852,17 +846,17 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
          if (shader->lut[i].filter != RARCH_FILTER_UNSPEC)
          {
             char k[128];
-            k[0]  = '\0';
             strlcpy(k, shader->lut[i].id, sizeof(k));
             strlcat(k, "_linear", sizeof(k));
-            config_set_bool(conf, k, 
-                  shader->lut[i].filter == RARCH_FILTER_LINEAR);
+            config_set_string(conf, k, 
+                  (shader->lut[i].filter == RARCH_FILTER_LINEAR)
+                  ? "true"
+                  : "false");
          }
 
          /* Wrap Mode */
          {
             char k[128];
-            k[0]  = '\0';
             strlcpy(k, shader->lut[i].id, sizeof(k));
             strlcat(k, "_wrap_mode", sizeof(k));
             config_set_string(conf, k,
@@ -872,10 +866,11 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
          /* Mipmap On or Off */
          {
             char k[128];
-            k[0]  = '\0';
             strlcpy(k, shader->lut[i].id, sizeof(k));
             strlcat(k, "_mipmap", sizeof(k));
-            config_set_bool(conf, k, shader->lut[i].mipmap);
+            config_set_string(conf, k, shader->lut[i].mipmap
+                  ? "true"
+                  : "false");
          }
       }
    }
@@ -1088,7 +1083,6 @@ static bool video_shader_write_referenced_preset(
    config_dir[0]                          = '\0';
    relative_tmp_ref_path[0]               = '\0';
    abs_tmp_ref_path[0]                    = '\0';
-   path_to_ref[0]                         = '\0';
 
    path_basedir(new_preset_basedir);
 
@@ -1681,10 +1675,8 @@ static bool override_shader_values(config_file_t *override_conf,
        * for each in the override config */
       for (i = 0; i < shader->luts; i++)
       {
-         entry = config_get_entry(override_conf, shader->lut[i].id);
-
          /* If the texture is defined in the reference config */
-         if (entry)
+         if ((entry = config_get_entry(override_conf, shader->lut[i].id)))
          {
             /* Texture path from shader the config */
             config_get_path(override_conf, shader->lut[i].id,
@@ -2281,8 +2273,6 @@ void dir_check_shader(
          if (shader && !string_is_empty(shader->loaded_preset_path))
          {
             char last_shader_path[PATH_MAX_LENGTH];
-            last_shader_path[0] = '\0';
-
             fill_pathname_join(last_shader_path,
                   last_shader_preset_dir, last_shader_preset_file_name,
                   sizeof(last_shader_path));
@@ -2391,8 +2381,6 @@ bool load_shader_preset(settings_t *settings, const char *core_name,
 
    shader_path[0]                     = '\0';
    content_dir_name[0]                = '\0';
-   config_file_directory[0]           = '\0';
-   old_presets_directory[0]           = '\0';
 
    if (has_content)
    {
@@ -2402,12 +2390,17 @@ bool load_shader_preset(settings_t *settings, const char *core_name,
    }
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
-      fill_pathname_basedir(config_file_directory,
+   {
+      strlcpy(config_file_directory,
             path_get(RARCH_PATH_CONFIG), sizeof(config_file_directory));
+      path_basedir(config_file_directory);
+   }
 
    if (!string_is_empty(video_shader_directory))
       fill_pathname_join(old_presets_directory,
          video_shader_directory, "presets", sizeof(old_presets_directory));
+   else
+      old_presets_directory[0]        = '\0';
 
    dirs[0]                            = menu_config_directory;
    dirs[1]                            = config_file_directory;
@@ -2417,20 +2410,23 @@ bool load_shader_preset(settings_t *settings, const char *core_name,
    {
       if (string_is_empty(dirs[i]))
          continue;
-      /* Game-specific shader preset found? */
-      if (has_content && retroarch_load_shader_preset_internal(
-               shader_path,
-               sizeof(shader_path),
-               dirs[i], core_name,
-               game_name))
-         goto success;
-      /* Folder-specific shader preset found? */
-      if (has_content && retroarch_load_shader_preset_internal(
-               shader_path,
-               sizeof(shader_path),
-               dirs[i], core_name,
-               content_dir_name))
-         goto success;
+      if (has_content)
+      {
+         /* Game-specific shader preset found? */
+         if (retroarch_load_shader_preset_internal(
+                  shader_path,
+                  sizeof(shader_path),
+                  dirs[i], core_name,
+                  game_name))
+            goto success;
+         /* Folder-specific shader preset found? */
+         if (retroarch_load_shader_preset_internal(
+                  shader_path,
+                  sizeof(shader_path),
+                  dirs[i], core_name,
+                  content_dir_name))
+            goto success;
+      }
       /* Core-specific shader preset found? */
       if (retroarch_load_shader_preset_internal(
                shader_path,

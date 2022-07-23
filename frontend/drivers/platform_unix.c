@@ -577,13 +577,9 @@ static void frontend_android_get_version_sdk(int32_t *sdk)
 {
    char os_version_str[PROP_VALUE_MAX] = {0};
    system_property_get("getprop", "ro.build.version.sdk", os_version_str);
-
    *sdk = 0;
    if (os_version_str[0])
-   {
-      int num_read = sscanf(os_version_str, "%d", sdk);
-      (void) num_read;
-   }
+      *sdk = (int32_t)strtol(os_version_str, NULL, 10);
 }
 
 static bool device_is_xperia_play(const char *name)
@@ -1281,13 +1277,14 @@ static void frontend_unix_get_os(char *s,
 
    strcpy_literal(s, "Android");
 #else
-   unsigned krel;
+   char *ptr;
    struct utsname buffer;
 
    if (uname(&buffer) != 0)
       return;
 
-   sscanf(buffer.release, "%d.%d.%u", major, minor, &krel);
+   *major = (int)strtol(buffer.release, &ptr, 10);
+   *minor = (int)strtol(++ptr, NULL, 10);
 #if defined(__FreeBSD__)
    strcpy_literal(s, "FreeBSD");
 #elif defined(__NetBSD__)

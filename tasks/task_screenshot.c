@@ -191,9 +191,28 @@ task_finished:
 }
 
 #if defined(HAVE_GFX_WIDGETS)
-void task_screenshot_callback(retro_task_t *task,
+static void task_screenshot_callback(retro_task_t *task,
       void *task_data,
-      void *user_data, const char *error);
+      void *user_data, const char *error)
+{
+   screenshot_task_state_t *state = NULL;
+
+   if (!task)
+      return;
+
+   if (!(state = (screenshot_task_state_t*)task->state))
+      return;
+
+   if (!state->silence && state->widgets_ready)
+      gfx_widget_screenshot_taken(dispwidget_get_ptr(),
+            state->shotname, state->filename);
+
+   free(state);
+   /* Must explicitly set task->state to NULL here,
+    * to avoid potential heap-use-after-free errors */
+   state       = NULL;
+   task->state = NULL;
+}
 #endif
 
 /* Take frame bottom-up. */
@@ -218,8 +237,6 @@ static bool screenshot_dump(
    settings_t *settings           = config_get_ptr();
    screenshot_task_state_t *state = (screenshot_task_state_t*)
          calloc(1, sizeof(*state));
-
-   state->shotname[0]             = '\0';
 
    /* If fullpath is true, name_base already contains a 
     * static path + filename to save the screenshot to. */
@@ -254,8 +271,6 @@ static bool screenshot_dump(
       else
       {
          char new_screenshot_dir[PATH_MAX_LENGTH];
-
-         new_screenshot_dir[0] = '\0';
 
          if (!string_is_empty(screenshot_dir))
          {
@@ -315,15 +330,11 @@ static bool screenshot_dump(
 
          if (  string_is_empty(new_screenshot_dir) || 
                settings->bools.screenshots_in_content_dir)
-         {
             fill_pathname_basedir(new_screenshot_dir, name_base,
                   sizeof(new_screenshot_dir));
-            fill_pathname_join(state->filename, new_screenshot_dir,
-                  state->shotname, sizeof(state->filename));
-         }
-         else
-            fill_pathname_join(state->filename, new_screenshot_dir,
-                  state->shotname, sizeof(state->filename));
+
+         fill_pathname_join(state->filename, new_screenshot_dir,
+               state->shotname, sizeof(state->filename));
 
          /* Create screenshot directory, if required */
          if (!path_is_directory(new_screenshot_dir))
@@ -333,8 +344,7 @@ static bool screenshot_dump(
    }
 
 #if defined(HAVE_RPNG)
-   buf = (uint8_t*)malloc(width * height * 3);
-   if (!buf)
+   if (!(buf = (uint8_t*)malloc(width * height * 3)))
    {
       free(state);
       return false;
